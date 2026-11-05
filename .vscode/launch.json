@@ -1,0 +1,10 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    { "name": "GiftFlow (Alpha Debug)",   "request": "launch", "type": "dart", "program": "lib/main.dart", "args": ["--flavor", "alpha"] },
+    { "name": "GiftFlow (Dev Debug)",     "request": "launch", "type": "dart", "program": "lib/main.dart", "args": ["--flavor", "dev"] },
+    { "name": "GiftFlow (Dev Release)",   "request": "launch", "type": "dart", "program": "lib/main.dart", "flutterMode": "release", "args": ["--flavor", "dev"] },
+    { "name": "GiftFlow (Product Debug)", "request": "launch", "type": "dart", "program": "lib/main.dart", "args": ["--flavor", "product"] },
+    { "name": "GiftFlow (Product Release)", "request": "launch", "type": "dart", "program": "lib/main.dart", "flutterMode": "release", "args": ["--flavor", "product"] }
+  ]
+}
