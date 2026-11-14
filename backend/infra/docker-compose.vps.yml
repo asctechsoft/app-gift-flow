@@ -1,0 +1,39 @@
+# VPS dùng chung (đã có nginx giữ 80/443): KHÔNG có Caddy, API chỉ mở ở 127.0.0.1:3100,
+# nginx (infra/nginx-giftflow.conf) reverse-proxy vào đây. Postgres riêng, không publish cổng.
+name: giftflow
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: giftflow
+      POSTGRES_USER: giftflow
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set in .env}
+    volumes: [pgdata:/var/lib/postgresql/data]
+    networks: [internal]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U giftflow"]
+      interval: 10s
+      retries: 5
+    deploy: { resources: { limits: { memory: 512M } } }
+
+  api:
+    build: { context: .., dockerfile: Dockerfile }
+    restart: unless-stopped
+    env_file: ../.env
+    environment:
+      NODE_ENV: production
+      DB_TYPE: postgres
+      DATABASE_URL: postgres://giftflow:${POSTGRES_PASSWORD}@postgres:5432/giftflow
+    depends_on:
+      postgres: { condition: service_healthy }
+    ports: ["127.0.0.1:3100:3000"]
+    volumes: [exports:/app/exports]
+    networks: [internal, default]
+    deploy: { resources: { limits: { memory: 512M } } }
+
+networks:
+  internal: { internal: true }
+volumes:
+  pgdata:
+  exports:
