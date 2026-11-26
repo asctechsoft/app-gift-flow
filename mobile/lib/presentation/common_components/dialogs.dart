@@ -28,7 +28,7 @@ Future<bool> confirmDialog({
             const SizedBox(height: 10),
             Text(
               message,
-              style: const TextStyle(color: AppColors.textSecondary),
+              style: TextStyle(color: AppColors.textSecondary),
             ),
             const SizedBox(height: 20),
             Row(

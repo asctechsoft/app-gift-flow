@@ -2,7 +2,7 @@
 class Schema {
   Schema._();
 
-  static const int version = 3;
+  static const int version = 4;
 
   static const String createEvents = '''
 CREATE TABLE events (
@@ -105,6 +105,30 @@ CREATE TABLE plan_guests (
 
   static const String idxPlanGuests =
       'CREATE INDEX idx_plan_guests_event ON plan_guests(event_id, invite_status)';
+
+  /// v4: lịch đi mừng (sự kiện của người khác mình được mời).
+  static const String createInvitations = '''
+CREATE TABLE invitations (
+  id TEXT PRIMARY KEY,
+  person_name TEXT NOT NULL,
+  relationship TEXT,
+  occasion TEXT NOT NULL DEFAULT 'wedding',
+  event_date TEXT NOT NULL,
+  event_time TEXT,
+  location TEXT,
+  planned_vnd INTEGER NOT NULL DEFAULT 0,
+  given_vnd INTEGER NOT NULL DEFAULT 0,
+  status TEXT NOT NULL DEFAULT 'upcoming',
+  note TEXT,
+  search_key TEXT NOT NULL DEFAULT '',
+  created_at INTEGER NOT NULL,
+  updated_at INTEGER NOT NULL,
+  deleted_at INTEGER,
+  synced INTEGER NOT NULL DEFAULT 0
+)''';
+
+  static const String idxInvitations =
+      'CREATE INDEX idx_invitations_date ON invitations(event_date)';
 
   static const String idxOutboxEntity =
       'CREATE UNIQUE INDEX idx_outbox_entity ON outbox(entity, entity_id)';

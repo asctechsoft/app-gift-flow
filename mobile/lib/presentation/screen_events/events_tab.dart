@@ -67,7 +67,7 @@ class _EventsTabState extends State<EventsTab> {
                       const SizedBox(height: 2),
                       Text(
                         'events_subtitle'.tr,
-                        style: const TextStyle(
+                        style: TextStyle(
                           color: AppColors.textSecondary,
                           fontSize: 13,
                         ),
@@ -272,7 +272,7 @@ class _EventsTabState extends State<EventsTab> {
                   const SizedBox(height: 4),
                   Row(
                     children: [
-                      const Icon(
+                      Icon(
                         Icons.calendar_today_outlined,
                         size: 13,
                         color: AppColors.textSecondary,
@@ -280,7 +280,7 @@ class _EventsTabState extends State<EventsTab> {
                       const SizedBox(width: 5),
                       Text(
                         DateFmt.display(e.eventDate),
-                        style: const TextStyle(
+                        style: TextStyle(
                           color: AppColors.textSecondary,
                           fontSize: 12.5,
                         ),
@@ -299,23 +299,23 @@ class _EventsTabState extends State<EventsTab> {
                   const SizedBox(height: 4),
                   Row(
                     children: [
-                      const Icon(Icons.mail_outline_rounded,
+                      Icon(Icons.mail_outline_rounded,
                           size: 14, color: AppColors.textSecondary),
                       const SizedBox(width: 4),
                       Text(
                         '${st?.envelopes ?? 0} ${'kpi_envelopes'.tr}',
-                        style: const TextStyle(
+                        style: TextStyle(
                           color: AppColors.textSecondary,
                           fontSize: 12,
                         ),
                       ),
                       const SizedBox(width: 12),
-                      const Icon(Icons.groups_outlined,
+                      Icon(Icons.groups_outlined,
                           size: 14, color: AppColors.textSecondary),
                       const SizedBox(width: 4),
                       Text(
                         '${st?.guests ?? 0} ${'kpi_guests'.tr}',
-                        style: const TextStyle(
+                        style: TextStyle(
                           color: AppColors.textSecondary,
                           fontSize: 12,
                         ),
@@ -391,7 +391,7 @@ class _EventsTabState extends State<EventsTab> {
                 ),
                 Text(
                   'events_tip_msg'.tr,
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: AppColors.textSecondary,
                     fontSize: 12.5,
                   ),

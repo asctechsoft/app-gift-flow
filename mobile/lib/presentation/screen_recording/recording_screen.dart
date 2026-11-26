@@ -122,7 +122,7 @@ class _RecordingScreenState extends State<RecordingScreen> {
                       child: Text(
                         info,
                         textAlign: TextAlign.center,
-                        style: const TextStyle(
+                        style: TextStyle(
                             fontSize: 11.5, color: AppColors.textSecondary),
                       ),
                     );
@@ -177,7 +177,7 @@ class _RecordingScreenState extends State<RecordingScreen> {
                       c.event!.name,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 13,
                         color: AppColors.textSecondary,
                       ),
@@ -199,7 +199,7 @@ class _RecordingScreenState extends State<RecordingScreen> {
               child: Text(
                 'rec_empty'.tr,
                 textAlign: TextAlign.center,
-                style: const TextStyle(
+                style: TextStyle(
                     color: AppColors.textSecondary, height: 1.4),
               ),
             ),
@@ -221,7 +221,7 @@ class _RecordingScreenState extends State<RecordingScreen> {
                   ? IconButton(
                       tooltip: 'undo'.tr,
                       onPressed: () => c.undoItem(g),
-                      icon: const Icon(
+                      icon: Icon(
                         Icons.undo_rounded,
                         color: AppColors.textSecondary,
                         size: 20,
@@ -278,7 +278,7 @@ class _RecordingScreenState extends State<RecordingScreen> {
                           ? 'rec_tap_mic'.tr
                           : 'rec_hint'.tr),
                   textAlign: TextAlign.center,
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: AppColors.textSecondary,
                     fontSize: 13,
                   ),
@@ -390,7 +390,7 @@ class _RecordingScreenState extends State<RecordingScreen> {
                   'args2': Money.format(c.confirmedTotal),
                   'args3': '$n',
                 }),
-                style: const TextStyle(
+                style: TextStyle(
                   color: AppColors.textSecondary,
                   fontSize: 13,
                 ),

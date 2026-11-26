@@ -45,6 +45,14 @@ class TurnBuffer {
   String _lastSent = '';
   DateTime _lastSentAt = DateTime.fromMillisecondsSinceEpoch(0);
   int _results = 0;
+  late DateTime _lastChangeAt = _clock();
+
+  /// Lần cuối câu nói THAY ĐỔI (có thêm/đổi chữ). Tiếng ồn nền và kết quả lặp lại
+  /// không làm mới mốc này -> đo "im lặng" chính xác để tự gửi.
+  DateTime get lastChangeAt => _lastChangeAt;
+
+  static String _norm(String s) =>
+      s.toLowerCase().replaceAll(RegExp(r'[^\p{L}\p{N}]', unicode: true), '');
 
   static String _join(String a, String b) =>
       a.isEmpty ? b : (b.isEmpty ? a : '$a $b');
@@ -58,6 +66,7 @@ class TurnBuffer {
 
   void onResult(String words, {required bool isFinal}) {
     _results++;
+    final before = text;
     final w = words.trim();
     if (isFinal) {
       _partial = '';
@@ -68,6 +77,9 @@ class TurnBuffer {
     } else {
       _partial = w;
     }
+    // So sánh bỏ dấu câu/hoa thường/khoảng trắng: máy hay thêm "." hoặc đổi hoa thường
+    // giữa các kết quả mà người nói chưa nói thêm gì.
+    if (_norm(text) != _norm(before)) _lastChangeAt = _clock();
     onLive(text);
   }
 
@@ -96,6 +108,7 @@ class TurnBuffer {
     _committed = '';
     _partial = '';
     _lastFinal = '';
+    _lastChangeAt = _clock();
     onLive('');
   }
 

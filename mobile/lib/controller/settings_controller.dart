@@ -17,6 +17,11 @@ class SettingsController extends GetxController {
 
   /// Tự lưu khi AI đọc rõ ràng (tên + số tiền, không nghi trùng).
   final RxBool autoSave = true.obs;
+
+  /// Thông báo cố định (thu gọn/mở rộng) hiện khi dùng app.
+  final RxBool statusNotification = true.obs;
+  /// system | light | dark
+  final RxString themeMode = 'system'.obs;
   final Rx<Locale> locale = const Locale('vi', 'VN').obs;
 
   Future<SettingsController> init() async {
@@ -26,6 +31,8 @@ class SettingsController extends GetxController {
     autoSilenceCut.value = _p.getBool(PrefConst.autoSilenceCut) ?? true;
     silenceMs.value = _p.getInt(PrefConst.silenceMs) ?? 5000;
     autoSave.value = _p.getBool(PrefConst.autoSave) ?? true;
+    statusNotification.value = _p.getBool(PrefConst.statusNotification) ?? true;
+    themeMode.value = _p.getString(PrefConst.themeMode) ?? 'system';
     locale.value = AscLocale.getAppLocale();
     return this;
   }
@@ -81,6 +88,19 @@ class SettingsController extends GetxController {
       await _p.setInt('expected_$eventId', n);
     }
   }
+
+  Future<void> setThemeMode(String m) async {
+    themeMode.value = m;
+    await _p.setString(PrefConst.themeMode, m);
+  }
+
+  Future<void> setStatusNotification(bool v) async {
+    statusNotification.value = v;
+    await _p.setBool(PrefConst.statusNotification, v);
+  }
+
+  bool get notifPermissionAsked => _p.getBool(PrefConst.notifAsked) ?? false;
+  Future<void> markNotifPermissionAsked() => _p.setBool(PrefConst.notifAsked, true);
 
   Future<void> setAutoSave(bool v) async {
     autoSave.value = v;

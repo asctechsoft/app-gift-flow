@@ -5,6 +5,7 @@ import 'package:package_info_plus/package_info_plus.dart';
 import '../../controller/settings_controller.dart';
 import '../../services/application/google_auth_service.dart';
 import '../../services/application/sync_service.dart';
+import '../../services/application/theme_service.dart';
 import '../../utils/toast_utils.dart';
 import '../../values/app_colors.dart';
 import '../../values/route_name.dart';
@@ -89,7 +90,7 @@ class SettingsTab extends StatelessWidget {
                     const SizedBox(height: 2),
                     Text(
                       'settings_subtitle'.tr,
-                      style: const TextStyle(color: AppColors.textSecondary, fontSize: 13),
+                      style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
                     ),
                   ],
                 ),
@@ -142,12 +143,12 @@ class SettingsTab extends StatelessWidget {
                           s.isSignedIn ? email : 'login_google'.tr,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(color: AppColors.textSecondary, fontSize: 13),
+                          style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
                         ),
                       ],
                     ),
                   ),
-                  const Icon(Icons.chevron_right_rounded, color: AppColors.textSecondary),
+                  Icon(Icons.chevron_right_rounded, color: AppColors.textSecondary),
                 ],
               ),
             );
@@ -163,6 +164,13 @@ class SettingsTab extends StatelessWidget {
                   title: 'set_recording'.tr,
                   subtitle: 'set_recording_sub'.tr,
                   onTap: () => Get.toNamed(RouteName.recordingOptions),
+                ),
+                const _Sep(),
+                _Row(
+                  icon: Icons.widgets_outlined,
+                  title: 'widgets_title'.tr,
+                  subtitle: 'widgets_sub'.tr,
+                  onTap: () => Get.toNamed(RouteName.widgets),
                 ),
                 const _Sep(),
                 Obx(() {
@@ -217,7 +225,7 @@ class SettingsTab extends StatelessWidget {
                   icon: Icons.star_border_rounded,
                   title: 'set_rate'.tr,
                   subtitle: 'set_rate_sub'.tr,
-                  trailing: const Icon(
+                  trailing: Icon(
                     Icons.open_in_new_rounded,
                     size: 20,
                     color: AppColors.textSecondary,
@@ -253,11 +261,11 @@ class SettingsTab extends StatelessWidget {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Icon(Icons.logout_rounded, color: AppColors.danger),
+                      Icon(Icons.logout_rounded, color: AppColors.danger),
                       const SizedBox(width: 8),
                       Text(
                         'logout'.tr,
-                        style: const TextStyle(
+                        style: TextStyle(
                           color: AppColors.danger,
                           fontWeight: FontWeight.w800,
                         ),
@@ -337,20 +345,20 @@ class _Row extends StatelessWidget {
                 if (subtitle != null && subtitle!.isNotEmpty)
                   Text(
                     subtitle!,
-                    style: const TextStyle(color: AppColors.textSecondary, fontSize: 12.5),
+                    style: TextStyle(color: AppColors.textSecondary, fontSize: 12.5),
                   ),
               ],
             ),
           ),
           if (trailing != null) ...[trailing!, const SizedBox(width: 6)],
-          const Icon(Icons.chevron_right_rounded, color: AppColors.textSecondary),
+          Icon(Icons.chevron_right_rounded, color: AppColors.textSecondary),
         ],
       ),
     ),
   );
 }
 
-/// Giao diện: Sáng / Tối / Hệ thống. Hiện chỉ giao diện Sáng được hỗ trợ đầy đủ.
+/// Giao diện: Sáng / Tối / Hệ thống (đổi ngay, lưu lại).
 class _ThemeRow extends StatelessWidget {
   const _ThemeRow(this.s);
   final SettingsController s;
@@ -376,44 +384,45 @@ class _ThemeRow extends StatelessWidget {
             style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
           ),
         ),
-        Container(
-          padding: const EdgeInsets.all(3),
-          decoration: BoxDecoration(
-            color: AppColors.chip,
-            borderRadius: BorderRadius.circular(14),
-          ),
-          child: Row(
-            children: [
-              _seg(Icons.wb_sunny_outlined, true, () {}),
-              _seg(Icons.dark_mode_outlined, false,
-                  () => Toast.show('theme_dark_soon'.tr)),
-              _seg(Icons.desktop_windows_outlined, false,
-                  () => Toast.show('theme_dark_soon'.tr)),
-            ],
+        Obx(
+          () => Container(
+            padding: const EdgeInsets.all(3),
+            decoration: BoxDecoration(
+              color: AppColors.chip,
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Row(
+              children: [
+                _seg(Icons.wb_sunny_outlined, ThemeModeKey.light),
+                _seg(Icons.dark_mode_outlined, ThemeModeKey.dark),
+                _seg(Icons.desktop_windows_outlined, ThemeModeKey.system),
+              ],
+            ),
           ),
         ),
       ],
     ),
   );
 
-  Widget _seg(IconData i, bool sel, VoidCallback onTap) => GestureDetector(
-    onTap: onTap,
-    child: Container(
-      width: 34,
-      height: 32,
-      decoration: BoxDecoration(
-        color: sel ? AppColors.surface : Colors.transparent,
-        borderRadius: BorderRadius.circular(11),
-        boxShadow: sel
-            ? [
-                BoxShadow(
-                  color: AppColors.primary.withValues(alpha: 0.15),
-                  blurRadius: 6,
-                ),
-              ]
-            : null,
+  Widget _seg(IconData i, String mode) {
+    final sel = s.themeMode.value == mode;
+    return GestureDetector(
+      onTap: () async {
+        await s.setThemeMode(mode);
+        ThemeService.change(mode);
+      },
+      child: Container(
+        width: 34,
+        height: 32,
+        decoration: BoxDecoration(
+          color: sel ? AppColors.surface : Colors.transparent,
+          borderRadius: BorderRadius.circular(11),
+          boxShadow: sel
+              ? [BoxShadow(color: AppColors.primary.withValues(alpha: 0.15), blurRadius: 6)]
+              : null,
+        ),
+        child: Icon(i, size: 18, color: sel ? AppColors.primary : AppColors.textSecondary),
       ),
-      child: Icon(i, size: 18, color: sel ? AppColors.primary : AppColors.textSecondary),
-    ),
-  );
+    );
+  }
 }

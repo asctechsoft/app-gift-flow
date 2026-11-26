@@ -29,7 +29,7 @@ class GradientScaffold extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Container(
-        decoration: const BoxDecoration(gradient: AppColors.screenGradient),
+        decoration: BoxDecoration(gradient: AppColors.screenGradient),
         child: Scaffold(
           backgroundColor: Colors.transparent,
           resizeToAvoidBottomInset: resizeToAvoidBottomInset,
@@ -275,7 +275,7 @@ class StatCard extends StatelessWidget {
                     label,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 13,
                       color: AppColors.textSecondary,
                     ),
@@ -370,7 +370,7 @@ class EventCard extends StatelessWidget {
                               : ' · ${event.location}'),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: AppColors.textSecondary,
                         fontSize: 13,
                       ),
@@ -396,7 +396,7 @@ class EventCard extends StatelessWidget {
                   icon: const Icon(Icons.more_vert_rounded),
                 )
               else
-                const Icon(
+                Icon(
                   Icons.chevron_right_rounded,
                   color: AppColors.textSecondary,
                 ),
@@ -485,7 +485,7 @@ class GiftRow extends StatelessWidget {
             Container(
               width: 44,
               height: 44,
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 color: AppColors.chip,
                 shape: BoxShape.circle,
               ),
@@ -515,7 +515,7 @@ class GiftRow extends StatelessWidget {
                       g.errorMessage!,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
+                      style: TextStyle(
                           color: AppColors.danger, fontSize: 12),
                     ),
                   if (showTranscript && (g.transcript ?? '').isNotEmpty) ...[
@@ -524,7 +524,7 @@ class GiftRow extends StatelessWidget {
                       '"${g.transcript}"',
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
+                      style: TextStyle(
                           color: AppColors.textSecondary,
                           fontSize: 12.5,
                           fontStyle: FontStyle.italic),
@@ -540,7 +540,7 @@ class GiftRow extends StatelessWidget {
                               : g.relationship!,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
+                          style: TextStyle(
                             color: AppColors.textSecondary,
                             fontSize: 13,
                           ),
@@ -553,7 +553,7 @@ class GiftRow extends StatelessWidget {
                           padding: const EdgeInsets.only(left: 6),
                           child: Tooltip(
                             message: 'unsynced'.tr,
-                            child: const Icon(
+                            child: Icon(
                               Icons.cloud_off_rounded,
                               size: 14,
                               color: AppColors.textSecondary,
@@ -625,7 +625,7 @@ class EmptyState extends StatelessWidget {
               Container(
                 width: 84,
                 height: 84,
-                decoration: const BoxDecoration(
+                decoration: BoxDecoration(
                   color: AppColors.chip,
                   shape: BoxShape.circle,
                 ),
@@ -643,7 +643,7 @@ class EmptyState extends StatelessWidget {
                 Text(
                   message!,
                   textAlign: TextAlign.center,
-                  style: const TextStyle(color: AppColors.textSecondary),
+                  style: TextStyle(color: AppColors.textSecondary),
                 ),
               ],
               if (actionLabel != null) ...[
@@ -815,7 +815,7 @@ class FieldLabel extends StatelessWidget {
         padding: const EdgeInsets.only(bottom: 6, top: 14),
         child: Text(
           text,
-          style: const TextStyle(
+          style: TextStyle(
             color: AppColors.textSecondary,
             fontWeight: FontWeight.w600,
             fontSize: 13,

@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsString, Matches, MaxLength, MinLength } from 'class-validator';
+import { IsBoolean, IsOptional, IsString, Matches, MaxLength, MinLength } from 'class-validator';
 
 export class GuestAuthDto {
   @ApiProperty({ description: 'UUID ngẫu nhiên do app sinh một lần và lưu trên máy' })
@@ -22,4 +22,15 @@ export class GoogleAuthDto {
   @MinLength(100)
   @MaxLength(4000)
   id_token: string;
+}
+
+export class GoogleLoginDto extends GoogleAuthDto {
+  @ApiProperty({
+    required: false,
+    description:
+      'true (mặc định): gộp dữ liệu khách trên máy vào tài khoản Google. false: chỉ đăng nhập, dùng dữ liệu của tài khoản (không đụng dữ liệu khách).',
+  })
+  @IsOptional()
+  @IsBoolean()
+  merge?: boolean;
 }

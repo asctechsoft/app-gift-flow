@@ -371,13 +371,13 @@ class _GiftsTabState extends State<GiftsTab> {
             ),
             if (pending)
               ListTile(
-                leading: const Icon(Icons.check_circle_outline_rounded, color: AppColors.success),
+                leading: Icon(Icons.check_circle_outline_rounded, color: AppColors.success),
                 title: Text('confirm'.tr),
                 onTap: () => Get.back(result: 'confirm'),
               ),
             ListTile(
-              leading: const Icon(Icons.delete_outline_rounded, color: AppColors.danger),
-              title: Text('delete'.tr, style: const TextStyle(color: AppColors.danger)),
+              leading: Icon(Icons.delete_outline_rounded, color: AppColors.danger),
+              title: Text('delete'.tr, style: TextStyle(color: AppColors.danger)),
               onTap: () => Get.back(result: 'delete'),
             ),
             const SizedBox(height: 8),
@@ -492,7 +492,7 @@ class _GiftsTabState extends State<GiftsTab> {
               ),
               Text(
                 'gifts_subtitle'.tr,
-                style: const TextStyle(
+                style: TextStyle(
                   color: AppColors.textSecondary,
                   fontSize: 12.5,
                 ),
@@ -533,7 +533,7 @@ class _GiftsTabState extends State<GiftsTab> {
           textInputAction: TextInputAction.search,
           decoration: InputDecoration(
             hintText: 'gifts_search_hint'.tr,
-            prefixIcon: const Icon(Icons.search_rounded, color: AppColors.textSecondary),
+            prefixIcon: Icon(Icons.search_rounded, color: AppColors.textSecondary),
             suffixIcon: _search.text.isNotEmpty
                 ? IconButton(
                     icon: const Icon(Icons.close_rounded, size: 20),
@@ -702,7 +702,7 @@ class _GiftsTabState extends State<GiftsTab> {
               ),
               Text(
                 'home_total'.tr,
-                style: const TextStyle(
+                style: TextStyle(
                   color: AppColors.textSecondary,
                   fontSize: 12,
                 ),
@@ -720,7 +720,7 @@ class _GiftsTabState extends State<GiftsTab> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(v, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 18)),
-        Text(l, style: const TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+        Text(l, style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
       ],
     ),
   );
@@ -853,7 +853,7 @@ class _GiftsTabState extends State<GiftsTab> {
                   const SizedBox(height: 2),
                   Row(
                     children: [
-                      const Icon(Icons.groups_outlined, size: 14, color: AppColors.textSecondary),
+                      Icon(Icons.groups_outlined, size: 14, color: AppColors.textSecondary),
                       const SizedBox(width: 4),
                       Flexible(
                         child: Text(
@@ -862,7 +862,7 @@ class _GiftsTabState extends State<GiftsTab> {
                               : g.relationship!.trim(),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
+                          style: TextStyle(
                             color: AppColors.textSecondary,
                             fontSize: 12.5,
                           ),
@@ -892,7 +892,7 @@ class _GiftsTabState extends State<GiftsTab> {
                 else
                   Text(
                     DateFormat('HH:mm').format(g.createdAt),
-                    style: const TextStyle(
+                    style: TextStyle(
                       color: AppColors.textSecondary,
                       fontSize: 12,
                     ),

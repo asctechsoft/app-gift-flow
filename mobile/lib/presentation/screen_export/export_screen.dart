@@ -151,7 +151,7 @@ class _ExportScreenState extends State<ExportScreen> {
                         color: AppColors.successBg,
                         borderRadius: BorderRadius.circular(24),
                       ),
-                      child: const Icon(
+                      child: Icon(
                         Icons.table_view_rounded,
                         size: 52,
                         color: AppColors.success,
@@ -171,7 +171,7 @@ class _ExportScreenState extends State<ExportScreen> {
                   Text(
                     ev.name,
                     textAlign: TextAlign.center,
-                    style: const TextStyle(color: AppColors.textSecondary),
+                    style: TextStyle(color: AppColors.textSecondary),
                   ),
                   FieldLabel('export_columns'.tr),
                   SoftCard(
@@ -273,7 +273,7 @@ class _ExportScreenState extends State<ExportScreen> {
                       child: Text(
                         'export_empty'.tr,
                         textAlign: TextAlign.center,
-                        style: const TextStyle(color: AppColors.textSecondary),
+                        style: TextStyle(color: AppColors.textSecondary),
                       ),
                     ),
                 ],

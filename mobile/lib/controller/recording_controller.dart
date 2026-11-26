@@ -82,7 +82,6 @@ class RecordingController extends GetxController with WidgetsBindingObserver {
   bool _turnOpen = false;
   bool _turnSent = false;
   DateTime _turnStart = DateTime.now();
-  DateTime _lastActivity = DateTime.now();
   double _maxLevel = -2;
   Timer? _ticker;
   int _generation = 0; // bỏ qua callback của lần nghe cũ
@@ -180,7 +179,6 @@ class RecordingController extends GetxController with WidgetsBindingObserver {
     _turnOpen = true;
     _turnSent = false;
     _turnStart = DateTime.now();
-    _lastActivity = _turnStart;
     _maxLevel = -2;
     _buffer.reset();
     banner.value = null;
@@ -221,14 +219,12 @@ class RecordingController extends GetxController with WidgetsBindingObserver {
     level.value = ((v + 2) / 12).clamp(0.0, 1.0);
     speaking.value = v > 1;
     if (v > _maxLevel) _maxLevel = v;
-    if (v > 1) _lastActivity = DateTime.now(); // đang nói: chưa tính im lặng
   }
 
   void _onResult(SpeechRecognitionResult r, int gen) {
     if (gen != _generation || !_turnOpen) return; // callback muộn của lần nghe cũ
     _buffer.onResult(r.recognizedWords, isFinal: r.finalResult);
     sttInfo.value = 'speech: $_locale · ${_buffer.resultCount}';
-    _lastActivity = DateTime.now();
     if (hint.value != null) hint.value = null;
   }
 
@@ -237,7 +233,8 @@ class RecordingController extends GetxController with WidgetsBindingObserver {
     if (!_turnOpen) return;
     final now = DateTime.now();
     if (_buffer.hasText) {
-      final quiet = now.difference(_lastActivity).inMilliseconds;
+      // Im lặng = câu nói không đổi nữa (không dựa vào mức âm: tiếng ồn nền làm treo).
+      final quiet = now.difference(_buffer.lastChangeAt).inMilliseconds;
       if (_settings.autoSilenceCut.value && quiet >= _settings.silenceMs.value) {
         _closeTurn(send: true); // im lặng đủ lâu (mặc định 5s) -> gửi
       }
@@ -265,7 +262,9 @@ class RecordingController extends GetxController with WidgetsBindingObserver {
       level.value = 0;
       speaking.value = false;
       if (_buffer.hasText) {
-        final quiet = DateTime.now().difference(_lastActivity).inMilliseconds;
+        final quiet = DateTime.now()
+            .difference(_buffer.lastChangeAt)
+            .inMilliseconds;
         if (!_settings.autoSilenceCut.value ||
             quiet < _settings.silenceMs.value) {
           _startRecognizer(); // tiếp tục gom câu của lượt này

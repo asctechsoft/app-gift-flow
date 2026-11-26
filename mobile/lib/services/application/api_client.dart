@@ -235,11 +235,22 @@ class ApiClient {
 
   /// Đổi Google ID token lấy phiên đăng nhập. Gửi kèm token guest hiện tại để
   /// backend gộp dữ liệu guest vào tài khoản Google. Trả tên hiển thị (nếu có).
-  Future<String?> loginGoogle(String idToken) async {
+  /// [merge] false: chỉ đăng nhập, dùng dữ liệu của tài khoản (không gộp dữ liệu khách trên máy).
+  Future<String?> loginGoogle(String idToken, {bool merge = true}) async {
     await ensureAuth();
-    final j = await _send('POST', '/v1/auth/google', body: {'id_token': idToken});
+    final j = await _send(
+      'POST',
+      '/v1/auth/google',
+      body: {'id_token': idToken, 'merge': merge},
+    );
     await _saveTokens(j);
     return j['display_name'] as String?;
+  }
+
+  /// Xem trước trước khi đăng nhập: tài khoản Google đã có dữ liệu chưa (không tạo/gộp gì).
+  Future<Map<String, dynamic>> previewGoogle(String idToken) async {
+    await ensureAuth();
+    return _send('POST', '/v1/auth/google/preview', body: {'id_token': idToken});
   }
 
   Future<void> putEvent(String id, Map<String, Object?> body) =>
@@ -302,6 +313,19 @@ class ApiClient {
 
   Future<List<Map<String, dynamic>>> listPlanGuests(String eventId) async {
     final j = await _send('GET', '/v1/events/$eventId/plan/guests');
+    return ((j['items'] as List?) ?? const []).cast<Map<String, dynamic>>();
+  }
+
+  // ----------------------------------------------------------- lịch đi mừng
+
+  Future<void> putInvitation(String id, Map<String, Object?> body) =>
+      _send('PUT', '/v1/invitations/$id', body: body);
+
+  Future<void> deleteInvitation(String id) =>
+      _send('DELETE', '/v1/invitations/$id');
+
+  Future<List<Map<String, dynamic>>> listInvitations() async {
+    final j = await _send('GET', '/v1/invitations');
     return ((j['items'] as List?) ?? const []).cast<Map<String, dynamic>>();
   }
 }

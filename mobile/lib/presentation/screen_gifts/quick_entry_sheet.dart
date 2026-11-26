@@ -240,7 +240,7 @@ class _QuickEntrySheetState extends State<QuickEntrySheet> {
                   const SizedBox(height: 8),
                   Text(
                     'scan_pick_name'.tr,
-                    style: const TextStyle(
+                    style: TextStyle(
                       color: AppColors.textSecondary,
                       fontSize: 12,
                     ),

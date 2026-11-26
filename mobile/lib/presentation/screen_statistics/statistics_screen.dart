@@ -52,7 +52,7 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
                 Text(
                   ev.name,
                   textAlign: TextAlign.center,
-                  style: const TextStyle(color: AppColors.textSecondary),
+                  style: TextStyle(color: AppColors.textSecondary),
                 ),
                 const SizedBox(height: 10),
                 _segmented(),
@@ -64,7 +64,7 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
                     children: [
                       Text(
                         'total_received'.tr,
-                        style: const TextStyle(
+                        style: TextStyle(
                           color: AppColors.textSecondary,
                           fontWeight: FontWeight.w600,
                         ),
@@ -273,7 +273,7 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
                           child: Text(
                             '${(s.byRelationship[i].count * 100 / total).round()}%',
                             textAlign: TextAlign.right,
-                            style: const TextStyle(
+                            style: TextStyle(
                               color: AppColors.textSecondary,
                               fontSize: 12,
                             ),
@@ -332,7 +332,7 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
                 Text(
                   'rel_count'
                       .trParams({'args1': '${s.byRelationship[i].count}'}),
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: AppColors.textSecondary,
                     fontSize: 12,
                   ),

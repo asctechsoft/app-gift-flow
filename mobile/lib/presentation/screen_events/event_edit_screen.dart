@@ -123,7 +123,7 @@ class _EventEditScreenState extends State<EventEditScreen> {
                     padding: const EdgeInsets.only(bottom: 8),
                     child: Text(
                       'event_first_msg'.tr,
-                      style: const TextStyle(color: AppColors.textSecondary),
+                      style: TextStyle(color: AppColors.textSecondary),
                     ),
                   ),
                 FieldLabel('event_name'.tr),
@@ -164,7 +164,7 @@ class _EventEditScreenState extends State<EventEditScreen> {
                       const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                   child: Row(
                     children: [
-                      const Icon(
+                      Icon(
                         Icons.calendar_today_outlined,
                         color: AppColors.textSecondary,
                       ),

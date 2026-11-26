@@ -107,6 +107,20 @@ void main() {
       expect(sent, isEmpty);
     });
 
+    test('im lặng đo theo lần câu NÓI THAY ĐỔI: kết quả lặp lại không làm mới mốc', () {
+      t.onResult('Chị Uyên Mừng 5 triệu', isFinal: false);
+      final changed = t.lastChangeAt;
+      now = now.add(const Duration(seconds: 3));
+      t.onResult('Chị Uyên Mừng 5 triệu', isFinal: false); // lặp lại, nhiễu nền
+      t.onResult('chị uyên mừng 5 triệu.', isFinal: false); // chỉ khác hoa/thường + dấu chấm
+      t.onResult('Chị Uyên Mừng 5 triệu', isFinal: false);
+      expect(t.lastChangeAt, changed);
+      expect(now.difference(t.lastChangeAt), const Duration(seconds: 3));
+      now = now.add(const Duration(seconds: 3));
+      t.onResult('Chị Uyên Mừng 5 triệu đồng', isFinal: false); // nói thêm
+      expect(t.lastChangeAt, now);
+    });
+
     test('resultCount đếm mọi callback (chẩn đoán)', () {
       t.onResult('a b c', isFinal: false);
       t.onResult('a b c d', isFinal: true);

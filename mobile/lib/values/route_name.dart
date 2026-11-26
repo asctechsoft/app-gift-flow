@@ -12,6 +12,8 @@ class RouteName {
   static const String eventEdit = '/event-edit'; // X01
   static const String eventDetail = '/event-detail';
   static const String plan = '/plan';
+  static const String invitations = '/invitations';
+  static const String widgets = '/settings/widgets';
   static const String privacy = '/settings/privacy';
   static const String terms = '/settings/terms';
   static const String profile = '/settings/profile';

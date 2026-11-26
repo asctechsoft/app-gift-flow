@@ -256,7 +256,7 @@ class StatBox extends StatelessWidget {
                 child: Text(
                   label,
                   maxLines: 1,
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: AppColors.textSecondary,
                     fontSize: 12,
                   ),
@@ -334,7 +334,7 @@ class DonutChart extends StatelessWidget {
             ),
             Text(
               centerBottom,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 12,
                 color: AppColors.textSecondary,
               ),

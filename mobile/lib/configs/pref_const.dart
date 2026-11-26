@@ -13,6 +13,9 @@ class PrefConst {
   static const String autoSilenceCut = 'rec_auto_silence_cut';
   static const String silenceMs = 'rec_silence_ms';
   static const String autoSave = 'rec_auto_save';
+  static const String statusNotification = 'status_notification';
+  static const String themeMode = 'theme_mode';
+  static const String notifAsked = 'notif_permission_asked';
   static const String serverUrl = 'server_url';
   static const String accountEmail = 'account_email';
   static const String lastSyncAt = 'last_sync_at';

@@ -232,7 +232,7 @@ class _GiftEditScreenState extends State<GiftEditScreen> {
                         ),
                         child: Row(
                           children: [
-                            const Icon(
+                            Icon(
                               Icons.calendar_today_outlined,
                               size: 20,
                               color: AppColors.textSecondary,
@@ -270,7 +270,7 @@ class _GiftEditScreenState extends State<GiftEditScreen> {
                         FieldLabel('review_transcript'.tr),
                         Text(
                           '"${_gift!.transcript}"',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontStyle: FontStyle.italic,
                             color: AppColors.textSecondary,
                           ),

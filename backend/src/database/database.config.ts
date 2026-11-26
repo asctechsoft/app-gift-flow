@@ -6,6 +6,7 @@ import { ALL_ENTITIES } from './entities';
 import { InitSchema1730000000000 } from './migrations/1730000000000-init-schema';
 import { AddGiftSide1730000000001 } from './migrations/1730000000001-add-gift-side';
 import { AddPlanning1730000000002 } from './migrations/1730000000002-add-planning';
+import { AddInvitations1730000000003 } from './migrations/1730000000003-add-invitations';
 import { SnakeNamingStrategy } from './snake-naming.strategy';
 
 /**
@@ -23,7 +24,7 @@ export function buildDataSourceOptions(cfg: AppConfig): DataSourceOptions {
       ...common,
       type: 'postgres',
       url: cfg.databaseUrl,
-      migrations: [InitSchema1730000000000, AddGiftSide1730000000001, AddPlanning1730000000002],
+      migrations: [InitSchema1730000000000, AddGiftSide1730000000001, AddPlanning1730000000002, AddInvitations1730000000003],
       migrationsRun: true,
       synchronize: false,
     };

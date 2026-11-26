@@ -11,6 +11,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'configs/pref_const.dart';
 import 'controller/event_controller.dart';
 import 'controller/gift_list_controller.dart';
+import 'controller/invitation_controller.dart';
 import 'controller/plan_controller.dart';
 import 'controller/gift_controller.dart';
 import 'controller/recording_controller.dart';
@@ -19,11 +20,15 @@ import 'presentation/screen_shell/shell_screen.dart';
 import 'repository/event_repository.dart';
 import 'repository/gift_repository.dart';
 import 'repository/outbox_repository.dart';
+import 'repository/invitation_repository.dart';
 import 'repository/plan_repository.dart';
 import 'services/application/api_client.dart';
 import 'services/application/app_check_service.dart';
+import 'services/application/notification_service.dart';
+import 'services/application/surface_updater.dart';
 import 'services/application/google_auth_service.dart';
 import 'services/application/sync_service.dart';
+import 'services/application/theme_service.dart';
 import 'values/app_pages.dart';
 import 'values/app_theme.dart';
 import 'values/route_name.dart';
@@ -80,10 +85,12 @@ Future<void> _setupDependencies() async {
   final events = Get.put(EventRepository(outbox), permanent: true);
   final gifts = Get.put(GiftRepository(outbox), permanent: true);
   final plan = Get.put(PlanRepository(outbox), permanent: true);
+  final invitations = Get.put(InvitationRepository(outbox), permanent: true);
 
   final settings = await Get.put(SettingsController(), permanent: true).init();
+  ThemeService.apply(settings.themeMode.value);
   final sync = await Get.put(
-    SyncService(api, outbox, events, gifts, plan),
+    SyncService(api, outbox, events, gifts, plan, invitations),
     permanent: true,
   ).init();
   final eventC = Get.put(
@@ -100,6 +107,12 @@ Future<void> _setupDependencies() async {
     permanent: true,
   );
   Get.put(PlanController(plan, eventC, sync), permanent: true);
+  await Get.put(NotificationService(), permanent: true).init();
+  final inviteC = Get.put(InvitationController(invitations, sync), permanent: true);
+  Get.put(
+    SurfaceUpdater(eventC, giftC, inviteC, settings, gifts),
+    permanent: true,
+  );
   Get.put(GoogleAuthService(api, settings, sync), permanent: true);
   Get.put(ShellController(), permanent: true);
 }
@@ -111,7 +124,7 @@ class GiftFlowApp extends StatelessWidget {
   Widget build(BuildContext context) => GetMaterialApp(
         title: 'GiftFlow AI',
         debugShowCheckedModeBanner: false,
-        theme: AppTheme.light,
+        theme: AppTheme.current,
         themeMode: ThemeMode.light,
         locale: AscLocale.getAppLocale(),
         fallbackLocale: const Locale('en', 'US'),
@@ -151,6 +164,12 @@ class _SystemUiObserver with WidgetsBindingObserver {
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) _hideNavigationBar();
+  }
+
+  @override
+  void didChangePlatformBrightness() {
+    final s = Get.find<SettingsController>();
+    if (s.themeMode.value == ThemeModeKey.system) ThemeService.change(ThemeModeKey.system);
   }
 
   @override

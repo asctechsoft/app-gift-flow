@@ -68,7 +68,7 @@ class _PlanEntryCardState extends State<PlanEntryCard> {
                           ? 'plan_entry_empty'.tr
                           : '${'plan_planned_total'.tr}: ${Money.format(s.plannedVnd)}\n'
                                 '${'plan_tab_guests'.tr}: ${s.guestCount} (${s.headcountExpected} ${'plan_people'.tr})',
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: AppColors.textSecondary,
                         fontSize: 12.5,
                         height: 1.35,
@@ -77,7 +77,7 @@ class _PlanEntryCardState extends State<PlanEntryCard> {
                   ],
                 ),
               ),
-              const Icon(Icons.chevron_right_rounded, color: AppColors.textSecondary),
+              Icon(Icons.chevron_right_rounded, color: AppColors.textSecondary),
             ],
           ),
           if (ratio != null) ...[

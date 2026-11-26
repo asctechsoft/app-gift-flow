@@ -176,6 +176,37 @@ export class PlanGuest {
   @Column({ type: Date, nullable: true }) deletedAt: Date | null;
 }
 
+/**
+ * Lịch đi mừng: đám cưới/sự kiện CỦA NGƯỜI KHÁC mà mình được mời - ngày giờ, địa điểm,
+ * dự chi bao nhiêu và đã mừng bao nhiêu cho người đó. Tách khỏi tiền mừng nhận được (gifts).
+ */
+@Entity('invitations')
+@Index('idx_invitations_owner_date', ['ownerId', 'eventDate'])
+export class Invitation {
+  @PrimaryColumn({ type: 'varchar', length: 36 }) id: string;
+  @Column({ type: 'varchar', length: 36 }) ownerId: string;
+  /** Tên người mời (cô dâu/chú rể/chủ nhà). */
+  @Column({ type: 'varchar', length: 200 }) personName: string;
+  @Column({ type: 'varchar', length: 100, nullable: true }) relationship: string | null;
+  /** wedding | engagement | birthday | housewarming | baby_month | other */
+  @Column({ type: 'varchar', length: 30, default: 'wedding' }) occasion: string;
+  @Column({ type: 'varchar', length: 10 }) eventDate: string;
+  /** HH:mm (24h), null = chưa rõ giờ. */
+  @Column({ type: 'varchar', length: 5, nullable: true }) eventTime: string | null;
+  @Column({ type: 'varchar', length: 300, nullable: true }) location: string | null;
+  /** Dự định mừng (VND). */
+  @Column({ type: 'integer', default: 0 }) plannedVnd: number;
+  /** Đã mừng thực tế (VND). */
+  @Column({ type: 'integer', default: 0 }) givenVnd: number;
+  /** upcoming | attended | skipped */
+  @Column({ type: 'varchar', length: 12, default: 'upcoming' }) status: string;
+  @Column({ type: 'varchar', length: 1000, nullable: true }) note: string | null;
+  @Column({ type: 'varchar', length: 400, default: '' }) searchKey: string;
+  @Column({ type: Date }) createdAt: Date;
+  @Column({ type: Date }) updatedAt: Date;
+  @Column({ type: Date, nullable: true }) deletedAt: Date | null;
+}
+
 export const ALL_ENTITIES = [
   User,
   RefreshToken,
@@ -187,4 +218,5 @@ export const ALL_ENTITIES = [
   ExportJob,
   PlanItem,
   PlanGuest,
+  Invitation,
 ];

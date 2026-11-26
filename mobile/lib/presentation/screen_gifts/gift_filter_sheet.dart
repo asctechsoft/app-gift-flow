@@ -450,7 +450,7 @@ class _FilterSheetState extends State<_FilterSheet> {
         children: [
           Text(
             label,
-            style: const TextStyle(
+            style: TextStyle(
               color: AppColors.textSecondary,
               fontSize: 12.5,
               fontWeight: FontWeight.w600,

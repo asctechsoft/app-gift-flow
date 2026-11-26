@@ -29,6 +29,7 @@ import 'package:gift_flow/presentation/screen_shell/shell_screen.dart';
 import 'package:gift_flow/presentation/screens_settings/settings_tab.dart';
 import 'package:gift_flow/repository/event_repository.dart';
 import 'package:gift_flow/repository/gift_repository.dart';
+import 'package:gift_flow/repository/invitation_repository.dart';
 import 'package:gift_flow/repository/outbox_repository.dart';
 import 'package:gift_flow/repository/plan_repository.dart';
 import 'package:gift_flow/controller/plan_controller.dart';
@@ -37,6 +38,13 @@ import 'package:gift_flow/presentation/screen_plan/plan_sheets.dart';
 import 'package:gift_flow/services/application/api_client.dart';
 import 'package:gift_flow/services/application/sync_service.dart';
 import 'package:gift_flow/values/app_theme.dart';
+import 'package:gift_flow/values/app_colors.dart';
+import 'package:gift_flow/controller/invitation_controller.dart';
+import 'package:gift_flow/models/data_models/invitation.dart';
+import 'package:gift_flow/presentation/screen_invitations/invitations_screen.dart';
+import 'package:gift_flow/presentation/screen_invitations/invitation_sheet.dart';
+import 'package:gift_flow/presentation/screens_settings/widgets_screen.dart';
+import 'package:gift_flow/services/application/notification_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
@@ -96,12 +104,15 @@ void main() {
     gifts = Get.put(GiftRepository(outbox));
     final plan = Get.put(PlanRepository(outbox));
     final settings = await Get.put(SettingsController()).init();
-    final sync = Get.put(SyncService(ApiClient(), outbox, events, gifts, plan));
+    final invRepo = InvitationRepository(outbox);
+    final sync = Get.put(SyncService(ApiClient(), outbox, events, gifts, plan, invRepo));
+    Get.put(NotificationService());
     final eventC = Get.put(EventController(events, gifts, settings, sync));
     Get.put(GiftController(gifts, eventC, sync));
     Get.put(GiftListController(gifts, Get.find<GiftController>(), eventC, sync));
     Get.put(PlanController(plan, eventC, sync));
     Get.put(ShellController());
+    Get.put(InvitationController(invRepo, sync));
 
     // ---- dữ liệu mẫu giống bản vẽ
     final now = DateTime.now();
@@ -170,7 +181,21 @@ void main() {
     await eventC.load();
     await Get.find<GiftController>().reload();
     await Get.find<GiftListController>().reload();
+    final ic = Get.find<InvitationController>();
+    for (final s in <(String, int, String?, int, String, int)>[
+      ('Minh Anh', 3, '10:30', 500000, InviteState.upcoming, 0),
+      ('Thu Hà', 12, null, 1000000, InviteState.upcoming, 0),
+      ('Văn Long', 40, '18:00', 700000, InviteState.upcoming, 0),
+      ('Bảo Ngọc', -20, '11:00', 500000, InviteState.attended, 600000),
+      ('Đức Anh', -45, null, 300000, InviteState.skipped, 0),
+    ]) {
+      final d = now.add(Duration(days: s.$2));
+      final inv = ic.newInvitation(personName: s.$1, eventDate: iso(d), eventTime: s.$3, plannedVnd: s.$4, relationship: 'Bạn bè', location: 'Nhà hàng Hoa Sen, Q1');
+      await ic.save(inv.copyWith(status: s.$5, givenVnd: s.$6));
+    }
   });
+
+  tearDown(() => AppColors.dark = false);
 
   Future<void> pumpShot(
     WidgetTester t,
@@ -192,7 +217,7 @@ void main() {
           ),
           locale: const Locale('vi', 'VN'),
           home: Scaffold(
-            backgroundColor: const Color(0xFFF6F0FF),
+            backgroundColor: AppColors.background,
             body: child,
           ),
         ),
@@ -338,6 +363,32 @@ void main() {
           await t.pump(const Duration(milliseconds: 700));
         },
       );
+    });
+  }
+
+  testWidgets('Lịch đi mừng', (t) async {
+    await pumpShot(t, const InvitationsScreen(), 'invitations');
+  });
+
+  testWidgets('Sheet lời mời', (t) async {
+    await pumpShot(t, Align(alignment: Alignment.bottomCenter, child: Material(color: AppColors.surface, child: InvitationSheet(Get.find<InvitationController>(), item: Get.find<InvitationController>().all.first))), 'invitation_sheet');
+  });
+
+  testWidgets('Widget & thông báo', (t) async {
+    await pumpShot(t, const WidgetsScreen(), 'widgets');
+  });
+
+  for (final e in <(String, Widget Function())>[
+    ('home', () => const HomeTab()),
+    ('events', () => const EventsTab()),
+    ('gifts', () => const GiftsTab()),
+    ('settings', () => const SettingsTab()),
+    ('invitations', () => const InvitationsScreen()),
+    ('widgets', () => const WidgetsScreen()),
+  ]) {
+    testWidgets('Dark: ${e.$1}', (t) async {
+      AppColors.dark = true;
+      await pumpShot(t, e.$2(), 'dark_${e.$1}');
     });
   }
 

@@ -5,7 +5,17 @@ import { createHash, randomBytes } from 'crypto';
 import { DataSource, IsNull, Repository } from 'typeorm';
 import { AppError } from '../../common/app-error';
 import { AppConfig, CONFIG } from '../../config/config';
-import { ExportJob, Gift, GiftEvent, RefreshToken, User, VoiceJob } from '../../database/entities';
+import {
+  ExportJob,
+  Gift,
+  GiftEvent,
+  Invitation,
+  PlanGuest,
+  PlanItem,
+  RefreshToken,
+  User,
+  VoiceJob,
+} from '../../database/entities';
 import { GoogleTokenVerifier } from './google-verifier';
 import { QuotasService } from '../quotas/quotas.service';
 
@@ -71,7 +81,11 @@ export class AuthService {
    * Đăng nhập Google. Nếu request có token guest hợp lệ, toàn bộ dữ liệu của guest
    * (sự kiện, tiền mừng...) được GỘP sang tài khoản Google (không nhân đôi, id giữ nguyên).
    */
-  async loginGoogle(idToken: string, guestUserId?: string): Promise<TokenPair & { display_name: string | null }> {
+  async loginGoogle(
+    idToken: string,
+    guestUserId?: string,
+    merge = true,
+  ): Promise<TokenPair & { display_name: string | null }> {
     const ident = await this.google.verify(idToken);
     let user = await this.users.findOne({ where: { authProvider: 'google', providerUserId: ident.sub } });
     if (!user) {
@@ -88,16 +102,51 @@ export class AuthService {
         user = await this.users.findOneOrFail({ where: { authProvider: 'google', providerUserId: ident.sub } });
       }
     }
-    if (guestUserId && guestUserId !== user.id) {
+    if (merge && guestUserId && guestUserId !== user.id) {
       const guest = await this.users.findOne({ where: { id: guestUserId, authProvider: 'guest' } });
       if (guest) await this.mergeGuest(guest.id, user.id);
     }
     return { ...(await this.issue(user.id)), display_name: user.displayName };
   }
 
+  /** Đếm dữ liệu (chưa xoá) của một người dùng - để app hỏi người dùng trước khi đồng bộ. */
+  private async countData(ownerId: string) {
+    const live = { ownerId, deletedAt: IsNull() } as any;
+    const [events, gifts, planItems, planGuests, invitations] = await Promise.all([
+      this.ds.getRepository(GiftEvent).count({ where: live }),
+      this.ds.getRepository(Gift).count({ where: live }),
+      this.ds.getRepository(PlanItem).count({ where: live }),
+      this.ds.getRepository(PlanGuest).count({ where: live }),
+      this.ds.getRepository(Invitation).count({ where: live }),
+    ]);
+    return { events, gifts, plan_items: planItems, plan_guests: planGuests, invitations };
+  }
+
+  /**
+   * Xem trước khi đăng nhập Google: tài khoản đã có dữ liệu chưa, và (nếu có token khách)
+   * dữ liệu của khách trên máy. KHÔNG tạo tài khoản, KHÔNG gộp - chỉ để app hiện hộp thoại hỏi.
+   */
+  async previewGoogle(idToken: string, guestUserId?: string) {
+    const ident = await this.google.verify(idToken);
+    const user = await this.users.findOne({ where: { authProvider: 'google', providerUserId: ident.sub } });
+    const account = user ? await this.countData(user.id) : null;
+    const guest =
+      guestUserId && guestUserId !== user?.id ? await this.countData(guestUserId) : null;
+    const has = (c: Record<string, number> | null) => !!c && Object.values(c).some((n) => n > 0);
+    return {
+      account_exists: !!user,
+      email: ident.email ?? null,
+      display_name: ident.name ?? null,
+      account,
+      guest,
+      account_has_data: has(account),
+      guest_has_data: has(guest),
+    };
+  }
+
   private async mergeGuest(fromId: string, toId: string): Promise<void> {
     await this.ds.transaction(async (m) => {
-      for (const entity of [GiftEvent, Gift, VoiceJob, ExportJob]) {
+      for (const entity of [GiftEvent, Gift, VoiceJob, ExportJob, PlanItem, PlanGuest, Invitation]) {
         await m.getRepository(entity).update({ ownerId: fromId } as any, { ownerId: toId } as any);
       }
       await m.getRepository(RefreshToken).update({ userId: fromId, revokedAt: IsNull() }, { revokedAt: new Date() });

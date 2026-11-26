@@ -143,7 +143,7 @@ class _PlanScreenState extends State<PlanScreen> {
                   _eventName,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: AppColors.textSecondary,
                     fontSize: 12.5,
                   ),
@@ -258,7 +258,7 @@ class _PlanScreenState extends State<PlanScreen> {
                 Text(
                   'plan_empty_msg'.tr,
                   textAlign: TextAlign.center,
-                  style: const TextStyle(color: AppColors.textSecondary, height: 1.4),
+                  style: TextStyle(color: AppColors.textSecondary, height: 1.4),
                 ),
                 const SizedBox(height: 14),
                 PrimaryButton(
@@ -436,7 +436,7 @@ class _PlanScreenState extends State<PlanScreen> {
                             ),
                             Text(
                               '${(top[i].plannedVnd / total * 100).round()}%',
-                              style: const TextStyle(
+                              style: TextStyle(
                                 color: AppColors.textSecondary,
                                 fontSize: 12.5,
                               ),
@@ -498,7 +498,7 @@ class _PlanScreenState extends State<PlanScreen> {
                             ),
                             Text(
                               '${list.length} ${'plan_items_n'.tr}',
-                              style: const TextStyle(
+                              style: TextStyle(
                                 color: AppColors.textSecondary,
                                 fontSize: 12,
                               ),
@@ -518,7 +518,7 @@ class _PlanScreenState extends State<PlanScreen> {
                           ),
                           Text(
                             '${'pay_paid'.tr} ${Money.format(paid)}',
-                            style: const TextStyle(
+                            style: TextStyle(
                               color: AppColors.textSecondary,
                               fontSize: 11.5,
                             ),
@@ -606,7 +606,7 @@ class _PlanScreenState extends State<PlanScreen> {
                       sub,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: AppColors.textSecondary,
                         fontSize: 12,
                       ),
@@ -656,7 +656,7 @@ class _PlanScreenState extends State<PlanScreen> {
           },
           decoration: InputDecoration(
             hintText: 'guest_search_hint'.tr,
-            prefixIcon: const Icon(Icons.search_rounded, color: AppColors.textSecondary),
+            prefixIcon: Icon(Icons.search_rounded, color: AppColors.textSecondary),
             suffixIcon: _search.text.isEmpty
                 ? null
                 : IconButton(
@@ -762,7 +762,7 @@ class _PlanScreenState extends State<PlanScreen> {
         const SizedBox(height: 2),
         FittedBox(
           fit: BoxFit.scaleDown,
-          child: Text(l, style: const TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+          child: Text(l, style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
         ),
       ],
     ),
@@ -845,7 +845,7 @@ class _PlanScreenState extends State<PlanScreen> {
                     ].join(' · '),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(color: AppColors.textSecondary, fontSize: 12.5),
+                    style: TextStyle(color: AppColors.textSecondary, fontSize: 12.5),
                   ),
                 ],
               ),
@@ -921,8 +921,8 @@ class _PlanScreenState extends State<PlanScreen> {
               onTap: () => Get.back(result: 'status'),
             ),
             ListTile(
-              leading: const Icon(Icons.delete_outline_rounded, color: AppColors.danger),
-              title: Text('delete'.tr, style: const TextStyle(color: AppColors.danger)),
+              leading: Icon(Icons.delete_outline_rounded, color: AppColors.danger),
+              title: Text('delete'.tr, style: TextStyle(color: AppColors.danger)),
               onTap: () => Get.back(result: 'delete'),
             ),
             const SizedBox(height: 8),

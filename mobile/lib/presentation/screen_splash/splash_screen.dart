@@ -92,14 +92,14 @@ class _SplashScreenState extends State<SplashScreen> {
                   child: Text(
                     'splash_tagline'.tr,
                     textAlign: TextAlign.center,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 16,
                       color: AppColors.textSecondary,
                     ),
                   ),
                 ),
                 const SizedBox(height: 36),
-                const SizedBox(
+                SizedBox(
                   width: 56,
                   child: ClipRRect(
                     borderRadius: BorderRadius.all(Radius.circular(4)),

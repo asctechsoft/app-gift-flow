@@ -56,9 +56,9 @@ void main() {
     });
     await old.close();
 
-    // --- mở bằng DatabaseHelper (schema mới v3) -> chạy onUpgrade
+    // --- mở bằng DatabaseHelper (schema mới v4) -> chạy onUpgrade
     final db = await DatabaseHelper.instance.db;
-    expect(await db.getVersion(), 3);
+    expect(await db.getVersion(), 4);
     final ev = await db.query('events');
     expect(ev.single['name'], 'Đám cưới cũ');
     expect(ev.single.containsKey('budget_vnd'), isTrue);
@@ -76,6 +76,19 @@ void main() {
     await repo.saveGuest(PlanGuest(id: 'pg1', eventId: 'e1', name: 'Chị Mai', partySize: 2));
     expect((await repo.items('e1')).single.name, 'Nhà hàng');
     expect((await repo.guests('e1')).single.partySize, 2);
+    // bảng lịch đi mừng (v4) dùng được ngay
+    await db.insert('invitations', {
+      'id': 'iv1',
+      'person_name': 'Minh Anh',
+      'occasion': 'wedding',
+      'event_date': '2030-01-01',
+      'planned_vnd': 500000,
+      'given_vnd': 0,
+      'status': 'upcoming',
+      'created_at': DateTime.now().toIso8601String(),
+      'updated_at': DateTime.now().toIso8601String(),
+    });
+    expect((await db.query('invitations')).single['person_name'], 'Minh Anh');
     // lưu ngân sách vào cột mới
     await db.update('events', {'budget_vnd': 300000000}, where: 'id = ?', whereArgs: ['e1']);
     expect((await db.query('events')).single['budget_vnd'], 300000000);

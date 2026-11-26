@@ -45,7 +45,7 @@ Future<void> showBudgetDialog(PlanController c) async {
         children: [
           Text(
             'plan_budget_hint'.tr,
-            style: const TextStyle(color: AppColors.textSecondary, fontSize: 13),
+            style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
           ),
           const SizedBox(height: 10),
           TextField(
@@ -67,7 +67,7 @@ Future<void> showBudgetDialog(PlanController c) async {
             onPressed: () => Get.back(result: 0),
             child: Text(
               'plan_budget_clear'.tr,
-              style: const TextStyle(color: AppColors.danger),
+              style: TextStyle(color: AppColors.danger),
             ),
           ),
         TextButton(onPressed: Get.back, child: Text('cancel'.tr)),
@@ -282,7 +282,7 @@ class _ItemSheetState extends State<_ItemSheet> {
                     if (paid > planned && planned > 0)
                       Text(
                         'plan_paid_over'.tr,
-                        style: const TextStyle(
+                        style: TextStyle(
                           color: AppColors.warning,
                           fontSize: 12.5,
                         ),
@@ -302,7 +302,7 @@ class _ItemSheetState extends State<_ItemSheet> {
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                 child: Row(
                   children: [
-                    const Icon(Icons.event_outlined, color: AppColors.textSecondary),
+                    Icon(Icons.event_outlined, color: AppColors.textSecondary),
                     const SizedBox(width: 12),
                     Expanded(
                       child: Text(
@@ -582,7 +582,7 @@ class _GuestSheetState extends State<_GuestSheet> {
                 Expanded(
                   child: Text(
                     'plan_party_hint'.tr,
-                    style: const TextStyle(
+                    style: TextStyle(
                       color: AppColors.textSecondary,
                       fontSize: 12.5,
                     ),
@@ -768,7 +768,7 @@ class _BulkSheetState extends State<_BulkSheet> {
             const SizedBox(height: 4),
             Text(
               'plan_bulk_hint'.tr,
-              style: const TextStyle(
+              style: TextStyle(
                 color: AppColors.textSecondary,
                 fontSize: 13,
                 height: 1.35,

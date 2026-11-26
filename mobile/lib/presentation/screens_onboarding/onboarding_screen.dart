@@ -69,7 +69,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   style: TextButton.styleFrom(minimumSize: const Size(64, 48)),
                   child: Text(
                     'skip'.tr,
-                    style: const TextStyle(
+                    style: TextStyle(
                       color: AppColors.textSecondary,
                       fontWeight: FontWeight.w600,
                     ),
@@ -104,7 +104,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                         Text(
                           p.$3.tr,
                           textAlign: TextAlign.center,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 16,
                             height: 1.45,
                             color: AppColors.textSecondary,

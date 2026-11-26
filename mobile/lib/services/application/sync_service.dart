@@ -7,10 +7,12 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../configs/pref_const.dart';
 import '../../models/data_models/gift_event.dart';
 import '../../models/data_models/gift_record.dart';
+import '../../models/data_models/invitation.dart';
 import '../../models/data_models/plan_models.dart';
 import '../../models/ui_models/gift_status.dart';
 import '../../repository/event_repository.dart';
 import '../../repository/gift_repository.dart';
+import '../../repository/invitation_repository.dart';
 import '../../repository/outbox_repository.dart';
 import '../../repository/plan_repository.dart';
 import 'api_client.dart';
@@ -18,13 +20,21 @@ import 'api_client.dart';
 /// Đồng bộ local-first: mọi thay đổi đã ghi SQLite + outbox; service này đẩy
 /// outbox lên backend khi có mạng, và kéo dữ liệu về khi khôi phục.
 class SyncService extends GetxService {
-  SyncService(this._api, this._outbox, this._events, this._gifts, this._plan);
+  SyncService(
+    this._api,
+    this._outbox,
+    this._events,
+    this._gifts,
+    this._plan,
+    this._invitations,
+  );
 
   final ApiClient _api;
   final OutboxRepository _outbox;
   final EventRepository _events;
   final GiftRepository _gifts;
   final PlanRepository _plan;
+  final InvitationRepository _invitations;
   static final AscLogger _log = AscLogger();
 
   final RxInt pendingCount = 0.obs;
@@ -138,6 +148,15 @@ class SyncService extends GetxService {
       if (e == null) return;
       await _api.putEvent(e.id, e.toApi());
       await _events.markSynced(e.id, e.updatedAt);
+    } else if (item.entity == 'invitation') {
+      final i = await _invitations.getRaw(item.entityId);
+      if (item.action == 'delete' || (i?.deletedAt != null)) {
+        await _ignore404(() => _api.deleteInvitation(item.entityId));
+        return;
+      }
+      if (i == null) return;
+      await _api.putInvitation(i.id, i.toApi());
+      await _invitations.markSynced(i.id, i.updatedAt);
     } else if (item.entity == 'plan_item') {
       final i = await _plan.getItemRaw(item.entityId);
       if (item.action == 'delete' || (i?.deletedAt != null)) {
@@ -208,6 +227,10 @@ class SyncService extends GetxService {
         }
         cursor = page['next_cursor'] as String?;
       } while (cursor != null);
+    }
+    for (final ij in await _api.listInvitations()) {
+      await _invitations.upsertFromServer(Invitation.fromApi(ij));
+      count++;
     }
     dataVersion.value++;
     return count;

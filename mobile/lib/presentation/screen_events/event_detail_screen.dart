@@ -226,12 +226,12 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
               const SizedBox(height: 6),
               Row(
                 children: [
-                  const Icon(Icons.calendar_today_outlined,
+                  Icon(Icons.calendar_today_outlined,
                       size: 14, color: AppColors.textSecondary),
                   const SizedBox(width: 6),
                   Text(
                     DateFmt.display(e.eventDate),
-                    style: const TextStyle(color: AppColors.textSecondary),
+                    style: TextStyle(color: AppColors.textSecondary),
                   ),
                 ],
               ),
@@ -421,7 +421,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
                   'args1': '$received',
                   'args2': '$expected',
                 }),
-                style: const TextStyle(color: AppColors.textSecondary, fontSize: 13),
+                style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
               ),
               const SizedBox(height: 8),
               Row(
@@ -447,7 +447,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
             ] else
               Text(
                 'ev_progress_hint'.tr,
-                style: const TextStyle(color: AppColors.textSecondary, fontSize: 13),
+                style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
               ),
           ],
         ),
@@ -470,7 +470,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
                   padding: const EdgeInsets.symmetric(vertical: 18),
                   child: Text(
                     'gifts_empty_title'.tr,
-                    style: const TextStyle(color: AppColors.textSecondary),
+                    style: TextStyle(color: AppColors.textSecondary),
                   ),
                 );
               }
@@ -501,7 +501,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
                                   ),
                                   Text(
                                     _ago(r.gift.createdAt),
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       color: AppColors.textSecondary,
                                       fontSize: 12,
                                     ),
@@ -642,7 +642,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
             },
             decoration: InputDecoration(
               hintText: 'ev_search_hint'.tr,
-              prefixIcon: const Icon(Icons.search_rounded, color: AppColors.textSecondary),
+              prefixIcon: Icon(Icons.search_rounded, color: AppColors.textSecondary),
               suffixIcon: _search.text.isEmpty
                   ? null
                   : IconButton(
@@ -691,7 +691,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
           ),
           Text(
             '${'sum_total'.tr}: ',
-            style: const TextStyle(color: AppColors.textSecondary),
+            style: TextStyle(color: AppColors.textSecondary),
           ),
           Text(
             Money.format(list.totalVnd),
@@ -762,7 +762,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
                     const SizedBox(height: 2),
                     Text(
                       DateFormat('HH:mm - dd/MM/yyyy').format(g.createdAt),
-                      style: const TextStyle(color: AppColors.textSecondary, fontSize: 12),
+                      style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
                     ),
                   ],
                 ),
@@ -792,7 +792,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
                     ),
                 ],
               ),
-              const Icon(Icons.chevron_right_rounded, color: AppColors.textSecondary),
+              Icon(Icons.chevron_right_rounded, color: AppColors.textSecondary),
             ],
           ),
         ),
@@ -815,7 +815,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
             },
             decoration: InputDecoration(
               hintText: 'guest_search_hint'.tr,
-              prefixIcon: const Icon(Icons.search_rounded, color: AppColors.textSecondary),
+              prefixIcon: Icon(Icons.search_rounded, color: AppColors.textSecondary),
             ),
           ),
         ),
@@ -892,7 +892,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
                             const SizedBox(width: 6),
                             Text(
                               '${g.count} ${'kpi_envelopes'.tr.toLowerCase()}',
-                              style: const TextStyle(
+                              style: TextStyle(
                                 color: AppColors.textSecondary,
                                 fontSize: 12,
                               ),
@@ -905,13 +905,13 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
                 ),
                 Text(
                   Money.format(g.totalVnd),
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: AppColors.success,
                     fontWeight: FontWeight.w800,
                     fontSize: 15,
                   ),
                 ),
-                const Icon(Icons.chevron_right_rounded, color: AppColors.textSecondary),
+                Icon(Icons.chevron_right_rounded, color: AppColors.textSecondary),
               ],
             ),
           ),
@@ -959,7 +959,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 child: Text('stats_empty'.tr,
-                    style: const TextStyle(color: AppColors.textSecondary)),
+                    style: TextStyle(color: AppColors.textSecondary)),
               )
             else
               Row(
@@ -998,7 +998,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
                                 ),
                                 Text(
                                   '${rels[i].count} (${(rels[i].count / totalCount * 100).round()}%)',
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     color: AppColors.textSecondary,
                                     fontSize: 12.5,
                                   ),
@@ -1026,7 +1026,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 child: Text('stats_empty'.tr,
-                    style: const TextStyle(color: AppColors.textSecondary)),
+                    style: TextStyle(color: AppColors.textSecondary)),
               )
             else
               TrendChart(points: _trend),
@@ -1045,7 +1045,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 12),
                 child: Text('stats_empty'.tr,
-                    style: const TextStyle(color: AppColors.textSecondary)),
+                    style: TextStyle(color: AppColors.textSecondary)),
               ),
             for (var i = 0; i < top.length; i++)
               Padding(
@@ -1062,7 +1062,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
                     ),
                     Text(
                       Money.format(top[i].totalVnd),
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: AppColors.success,
                         fontWeight: FontWeight.w800,
                       ),
@@ -1100,7 +1100,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
           l,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
-          style: const TextStyle(color: AppColors.textSecondary, fontSize: 11),
+          style: TextStyle(color: AppColors.textSecondary, fontSize: 11),
         ),
       ],
     ),

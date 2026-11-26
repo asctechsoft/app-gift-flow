@@ -14,6 +14,7 @@ import { HealthModule } from './modules/health/health.module';
 import { QuotasModule } from './modules/quotas/quotas.module';
 import { StatisticsModule } from './modules/statistics/statistics.module';
 import { ParseModule } from './modules/ai-parse/parse.module';
+import { InvitationsModule } from './modules/invitations/invitations.module';
 import { PlanModule } from './modules/plan/plan.module';
 import { VoiceModule } from './modules/voice/voice.module';
 
@@ -48,6 +49,7 @@ export class AppModule {
         VoiceModule,
         ParseModule,
         PlanModule,
+        InvitationsModule,
         StatisticsModule,
         ExportModule,
         HealthModule,

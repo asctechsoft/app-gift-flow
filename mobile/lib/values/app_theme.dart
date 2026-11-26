@@ -5,10 +5,17 @@ import 'app_colors.dart';
 class AppTheme {
   AppTheme._();
 
-  static ThemeData get light {
+  /// Theme theo bảng màu hiện hành ([AppColors.dark]).
+  static ThemeData get current => _build(AppColors.dark ? Brightness.dark : Brightness.light);
+
+  /// Giữ tên cũ cho test/tương thích: trả về theme hiện hành.
+  static ThemeData get light => current;
+
+  static ThemeData _build(Brightness b) {
     final scheme = ColorScheme.fromSeed(
       seedColor: AppColors.primary,
-      primary: AppColors.primary,
+      brightness: b,
+      primary: b == Brightness.dark ? const Color(0xFFA77CF2) : AppColors.primary,
       secondary: AppColors.accent,
       surface: AppColors.surface,
       error: AppColors.danger,
@@ -17,16 +24,20 @@ class AppTheme {
           borderRadius: BorderRadius.circular(14),
           borderSide: BorderSide(color: c),
         );
+    final base = b == Brightness.dark ? ThemeData.dark() : ThemeData.light();
     return ThemeData(
       useMaterial3: true,
+      brightness: b,
       colorScheme: scheme,
       scaffoldBackgroundColor: AppColors.background,
       canvasColor: AppColors.background,
-      textTheme: ThemeData.light().textTheme.apply(
-            bodyColor: AppColors.text,
-            displayColor: AppColors.text,
-          ),
-      appBarTheme: const AppBarTheme(
+      cardColor: AppColors.surface,
+      dialogTheme: DialogThemeData(backgroundColor: AppColors.surface),
+      textTheme: base.textTheme.apply(
+        bodyColor: AppColors.text,
+        displayColor: AppColors.text,
+      ),
+      appBarTheme: AppBarTheme(
         backgroundColor: Colors.transparent,
         elevation: 0,
         scrolledUnderElevation: 0,
@@ -50,18 +61,28 @@ class AppTheme {
         focusedBorder: border(AppColors.primary),
         errorBorder: border(AppColors.danger),
         focusedErrorBorder: border(AppColors.danger),
-        hintStyle: const TextStyle(color: AppColors.textSecondary),
+        hintStyle: TextStyle(color: AppColors.textSecondary),
       ),
       dividerColor: AppColors.border,
       snackBarTheme: SnackBarThemeData(
         behavior: SnackBarBehavior.floating,
-        backgroundColor: AppColors.text,
+        backgroundColor: b == Brightness.dark ? const Color(0xFF3A3258) : AppColors.text,
+        contentTextStyle: const TextStyle(color: Colors.white),
+        actionTextColor: const Color(0xFFD9C2FF),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
-      bottomSheetTheme: const BottomSheetThemeData(
+      bottomSheetTheme: BottomSheetThemeData(
         backgroundColor: AppColors.surface,
-        shape: RoundedRectangleBorder(
+        shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+      ),
+      switchTheme: SwitchThemeData(
+        thumbColor: WidgetStateProperty.resolveWith(
+          (s) => s.contains(WidgetState.selected) ? Colors.white : AppColors.textSecondary,
+        ),
+        trackColor: WidgetStateProperty.resolveWith(
+          (s) => s.contains(WidgetState.selected) ? AppColors.primary : AppColors.chip,
         ),
       ),
     );

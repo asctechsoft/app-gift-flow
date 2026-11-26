@@ -15,6 +15,7 @@ import '../../values/route_name.dart';
 import '../common_components/components.dart';
 import '../common_components/ui_kit.dart';
 import '../screen_gifts/quick_entry_sheet.dart';
+import '../screen_invitations/invitation_entry_card.dart';
 import '../screen_plan/plan_entry_card.dart';
 import '../screen_shell/shell_screen.dart';
 
@@ -90,7 +91,7 @@ class HomeTab extends StatelessWidget {
                       const SizedBox(height: 2),
                       Text(
                         'home_tagline'.tr,
-                        style: const TextStyle(
+                        style: TextStyle(
                           color: AppColors.textSecondary,
                           fontSize: 13.5,
                         ),
@@ -150,6 +151,8 @@ class HomeTab extends StatelessWidget {
                 ],
               );
             }),
+            const SizedBox(height: 14),
+            const InvitationEntryCard(),
             const SizedBox(height: 14),
             _actions(shell),
             const SizedBox(height: 14),
@@ -263,7 +266,7 @@ class HomeTab extends StatelessWidget {
                     const SizedBox(height: 6),
                     Row(
                       children: [
-                        const Icon(
+                        Icon(
                           Icons.calendar_today_outlined,
                           size: 14,
                           color: AppColors.textSecondary,
@@ -271,7 +274,7 @@ class HomeTab extends StatelessWidget {
                         const SizedBox(width: 6),
                         Text(
                           DateFmt.display(ev.eventDate),
-                          style: const TextStyle(
+                          style: TextStyle(
                             color: AppColors.textSecondary,
                             fontSize: 13,
                           ),
@@ -281,7 +284,7 @@ class HomeTab extends StatelessWidget {
                   ],
                 ),
               ),
-              const Icon(
+              Icon(
                 Icons.chevron_right_rounded,
                 color: AppColors.textSecondary,
               ),
@@ -443,7 +446,7 @@ class HomeTab extends StatelessWidget {
               padding: const EdgeInsets.symmetric(vertical: 18),
               child: Text(
                 'stats_empty'.tr,
-                style: const TextStyle(color: AppColors.textSecondary),
+                style: TextStyle(color: AppColors.textSecondary),
               ),
             )
           else
@@ -496,7 +499,7 @@ class HomeTab extends StatelessWidget {
                                 child: Text(
                                   '${(rels[i].count / total * 100).round()}%',
                                   textAlign: TextAlign.right,
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     color: AppColors.textSecondary,
                                     fontSize: 12.5,
                                   ),
@@ -521,7 +524,7 @@ class HomeTab extends StatelessWidget {
       required String label,
       required VoidCallback onTap,
       Color tint = AppColors.primary,
-      Color bg = AppColors.chip,
+      Color? bg,
       bool ai = false,
     }) => Expanded(
       child: GestureDetector(
@@ -542,7 +545,7 @@ class HomeTab extends StatelessWidget {
                     width: 46,
                     height: 46,
                     decoration: BoxDecoration(
-                      color: bg,
+                      color: bg ?? AppColors.chip,
                       borderRadius: BorderRadius.circular(14),
                     ),
                     child: Icon(icon, color: tint),
@@ -656,7 +659,7 @@ class HomeTab extends StatelessWidget {
                   ),
                   Text(
                     'home_detail_stats_sub'.tr,
-                    style: const TextStyle(
+                    style: TextStyle(
                       color: AppColors.textSecondary,
                       fontSize: 12.5,
                     ),

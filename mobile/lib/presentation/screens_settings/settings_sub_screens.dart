@@ -12,6 +12,7 @@ import '../../values/app_assets.dart';
 import '../../values/app_colors.dart';
 import '../common_components/components.dart';
 import '../common_components/dialogs.dart';
+import 'google_sync_dialog.dart';
 
 /// Thông tin cá nhân (tên hiển thị dùng ở lời chào Home).
 class ProfileScreen extends StatefulWidget {
@@ -31,19 +32,35 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Future<void> _signIn() async {
     setState(() => _busy = true);
+    var restoring = false;
     try {
-      await _auth.signIn();
+      final r = await _auth.signIn(
+        onChoose: showGoogleSyncChoice,
+        onRestoring: () {
+          restoring = true;
+          showRestoringDialog();
+        },
+      );
+      if (restoring && (Get.isDialogOpen ?? false)) Get.back();
+      restoring = false;
       _name.text = s.displayName.value;
-      Toast.show('login_done'.tr);
+      Toast.show(
+        r.restored > 0
+            ? 'sync_restored'.trParams({'args1': '${r.restored}'})
+            : 'login_done'.tr,
+      );
     } on GoogleAuthException catch (e) {
+      if (restoring && (Get.isDialogOpen ?? false)) Get.back();
       if (e.code == 'not_configured') {
         Toast.show('login_not_configured'.tr);
       } else if (e.code != 'cancelled') {
         Toast.show('login_failed'.tr);
       }
     } on NetworkException {
+      if (restoring && (Get.isDialogOpen ?? false)) Get.back();
       Toast.show('err_network'.tr);
     } on ApiException catch (e) {
+      if (restoring && (Get.isDialogOpen ?? false)) Get.back();
       Toast.show(e.message);
     } finally {
       if (mounted) setState(() => _busy = false);
@@ -80,7 +97,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     child: s.isSignedIn
                         ? Row(
                             children: [
-                              const Icon(Icons.verified_user_rounded,
+                              Icon(Icons.verified_user_rounded,
                                   color: AppColors.success),
                               const SizedBox(width: 12),
                               Expanded(
@@ -91,7 +108,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                         style: const TextStyle(
                                             fontWeight: FontWeight.w800)),
                                     Text(s.accountEmail.value,
-                                        style: const TextStyle(
+                                        style: TextStyle(
                                             color: AppColors.textSecondary)),
                                   ],
                                 ),
@@ -109,7 +126,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                       fontWeight: FontWeight.w800)),
                               const SizedBox(height: 4),
                               Text('login_desc'.tr,
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                       color: AppColors.textSecondary)),
                               const SizedBox(height: 12),
                               SecondaryButton(
@@ -131,7 +148,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 const SizedBox(height: 10),
                 Text(
                   'profile_note'.tr,
-                  style: const TextStyle(color: AppColors.textSecondary),
+                  style: TextStyle(color: AppColors.textSecondary),
                 ),
                 const Spacer(),
                 PrimaryButton(
@@ -207,7 +224,7 @@ class RecordingOptionsScreen extends StatelessWidget {
                     ),
                     Text(
                       'rec_opt_silence_note'.tr,
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: AppColors.textSecondary,
                         fontSize: 13,
                       ),
@@ -365,7 +382,7 @@ class _BackupScreenState extends State<BackupScreen> {
                         style: const TextStyle(fontWeight: FontWeight.w800)),
                     const SizedBox(height: 4),
                     Text('server_hint'.tr,
-                        style: const TextStyle(
+                        style: TextStyle(
                             color: AppColors.textSecondary, fontSize: 12.5)),
                     const SizedBox(height: 8),
                     TextField(
@@ -403,7 +420,7 @@ class _BackupScreenState extends State<BackupScreen> {
               const SizedBox(height: 16),
               Text(
                 'backup_note'.tr,
-                style: const TextStyle(
+                style: TextStyle(
                     color: AppColors.textSecondary, fontSize: 13),
               ),
             ],
@@ -455,7 +472,7 @@ class AboutScreen extends StatelessWidget {
                     snap.hasData
                         ? 'v${snap.data!.version}+${snap.data!.buildNumber}'
                         : '',
-                    style: const TextStyle(color: AppColors.textSecondary),
+                    style: TextStyle(color: AppColors.textSecondary),
                   ),
                 ),
               ),
@@ -473,7 +490,7 @@ class AboutScreen extends StatelessWidget {
                     const SizedBox(height: 6),
                     Text(
                       'privacy_body'.tr,
-                      style: const TextStyle(
+                      style: TextStyle(
                           color: AppColors.textSecondary, height: 1.4),
                     ),
                   ],
@@ -482,7 +499,7 @@ class AboutScreen extends StatelessWidget {
               const SizedBox(height: 12),
               Text(
                 'API: ${ApiClient.baseUrl}',
-                style: const TextStyle(
+                style: TextStyle(
                     color: AppColors.textSecondary, fontSize: 12),
               ),
             ],
@@ -515,7 +532,7 @@ class _DocScreen extends StatelessWidget {
                   const SizedBox(height: 6),
                   Text(
                     s.$2.tr,
-                    style: const TextStyle(
+                    style: TextStyle(
                       color: AppColors.textSecondary,
                       height: 1.45,
                     ),

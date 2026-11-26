@@ -4,7 +4,9 @@ import '../presentation/screen_events/event_detail_screen.dart';
 import '../presentation/screen_events/event_edit_screen.dart';
 import '../presentation/screen_export/export_screen.dart';
 import '../presentation/screen_gifts/gift_edit_screen.dart';
+import '../presentation/screen_invitations/invitations_screen.dart';
 import '../presentation/screen_plan/plan_screen.dart';
+import '../presentation/screens_settings/widgets_screen.dart';
 import '../presentation/screen_recording/record_result_screen.dart';
 import '../presentation/screen_recording/recording_screen.dart';
 import '../presentation/screen_shell/shell_screen.dart';
@@ -45,6 +47,8 @@ class AppPages {
     GetPage(name: RouteName.eventEdit, page: () => const EventEditScreen()),
     GetPage(name: RouteName.eventDetail, page: () => const EventDetailScreen()),
     GetPage(name: RouteName.plan, page: () => const PlanScreen()),
+    GetPage(name: RouteName.invitations, page: () => const InvitationsScreen()),
+    GetPage(name: RouteName.widgets, page: () => const WidgetsScreen()),
     GetPage(name: RouteName.privacy, page: () => const PrivacyScreen()),
     GetPage(name: RouteName.terms, page: () => const TermsScreen()),
     GetPage(name: RouteName.statistics, page: () => const StatisticsScreen()),
