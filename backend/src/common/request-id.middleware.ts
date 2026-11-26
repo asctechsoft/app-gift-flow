@@ -10,6 +10,7 @@ export function requestIdMiddleware(req: Request & { requestId?: string }, res: 
   const id = incoming && /^[A-Za-z0-9-]{8,64}$/.test(incoming) ? incoming : randomUUID();
   req.requestId = id;
   res.setHeader('x-request-id', id);
+  res.setHeader('Cache-Control', 'no-store'); // dữ liệu cá nhân: không để proxy/trình duyệt cache
   // Log truy cập: chỉ method + đường dẫn (bỏ query) + status + thời gian. Không log body/header (PII, token).
   const started = Date.now();
   res.on('finish', () => {

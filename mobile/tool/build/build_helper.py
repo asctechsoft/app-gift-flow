@@ -212,6 +212,9 @@ def flutter_build_apk(build):
     if api:
         print("API_BASE_URL =", api)
         cmd.append("--dart-define=API_BASE_URL=" + api)
+    # Token debug của Firebase App Check cho bản nội bộ (không bao giờ lưu trong repo).
+    if os.environ.get("APPCHECK_DEBUG_TOKEN") and build.flavor.lower() != "product":
+        cmd.append("--dart-define=APPCHECK_DEBUG_TOKEN=" + os.environ["APPCHECK_DEBUG_TOKEN"])
     print("Building APK:", " ".join(cmd))
     r = subprocess.run(cmd, text=True, encoding="utf-8", errors="replace")
     if r.returncode != 0:

@@ -10,6 +10,11 @@ class AppConfig {
     defaultValue: 'http://10.0.2.2:3000',
   );
 
+  /// Token debug App Check cho bản nội bộ (dev/alpha/claude). Không commit; truyền lúc build.
+  static const String appCheckDebugToken = String.fromEnvironment(
+    'APPCHECK_DEBUG_TOKEN',
+  );
+
   static const Duration apiTimeout = Duration(seconds: 20);
   static const Duration voiceTimeout = Duration(seconds: 45);
 

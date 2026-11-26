@@ -50,6 +50,7 @@ describe('GiftFlow API (e2e, sql.js in-memory, mock AI)', () => {
       QUOTA_LIMIT_PER_PERIOD: '5',
       EXPORT_DIR: exportDir,
       THROTTLE_LIMIT: '10000',
+      NEW_GUESTS_PER_IP_PER_DAY: '100000',
     } as NodeJS.ProcessEnv);
     const mod = await Test.createTestingModule({ imports: [AppModule.forRoot(cfg)] })
       .overrideProvider(GoogleTokenVerifier)

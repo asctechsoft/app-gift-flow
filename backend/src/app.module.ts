@@ -5,6 +5,7 @@ import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { AppConfig, CONFIG, loadConfig } from './config/config';
 import { buildDataSourceOptions } from './database/database.config';
 import { AuditModule } from './modules/audit/audit.module';
+import { AppCheckModule } from './modules/app-check/app-check.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { EventsModule } from './modules/events/events.module';
 import { ExportModule } from './modules/export/export.module';
@@ -39,6 +40,7 @@ export class AppModule {
         TypeOrmModule.forRoot(buildDataSourceOptions(cfg)),
         ThrottlerModule.forRoot([{ ttl: cfg.throttleTtl * 1000, limit: cfg.throttleLimit }]),
         AuditModule,
+        AppCheckModule,
         QuotasModule,
         AuthModule,
         EventsModule,

@@ -111,4 +111,19 @@ describe('AI pipeline (bộ câu bắt buộc trong blueprint)', () => {
       expect(c.needs_review).toBe(true);
     });
   });
+
+  it('cảnh báo name_missing/amount_missing của LLM bị bỏ khi kết quả đã có tên + số tiền', () => {
+    const c = ai.normalize(
+      { guest_name: 'Chị Mai', amount_vnd: 500_000, needs_review: true, warnings: ['name_missing', 'amount_missing'] },
+      'Chị Mai năm trăm',
+    );
+    expect(c.warnings).toEqual([]);
+    expect(c.needs_review).toBe(false);
+  });
+
+  it('thiếu tên thật sự vẫn bị cảnh báo', () => {
+    const c = ai.normalize({ guest_name: null, amount_vnd: 500_000, needs_review: false, warnings: [] }, 'năm trăm nghìn');
+    expect(c.warnings).toContain('name_missing');
+    expect(c.needs_review).toBe(true);
+  });
 });

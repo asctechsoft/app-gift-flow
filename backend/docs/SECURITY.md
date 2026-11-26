@@ -11,3 +11,19 @@
 
 ## Quyết định còn mở (owner chốt trước production)
 Domain API; guest vs đăng nhập thật (cần device attestation nếu giữ guest); model STT/LLM theo benchmark; quota/cost cap; chính sách lưu transcript/audio; đồng bộ nhiều thiết bị; nhà cung cấp DB lâu dài; tài khoản store/kiếm tiền.
+
+
+## Lớp bảo vệ chống lạm dụng API / chi phí OpenAI (cập nhật)
+
+| Lớp | Cách làm | Cấu hình |
+|---|---|---|
+| Khóa OpenAI | Chỉ nằm ở `/opt/giftflow/.env` (quyền 600) trên VPS; app không bao giờ thấy | `OPENAI_API_KEY` |
+| Firebase App Check | Token Play Integrity/debug gắn header `X-Firebase-AppCheck`; server tự kiểm chữ ký RS256 bằng JWKS của Firebase (iss, aud, exp, sub). Áp dụng cho đăng nhập khách/Google và API AI | `APP_CHECK_MODE=off|monitor|enforce`, `FIREBASE_PROJECT_NUMBER`, `APP_CHECK_APP_IDS` |
+| Quota theo người dùng | Trừ nguyên tử phía server, 429 khi hết | `QUOTA_LIMIT_PER_PERIOD` |
+| Trần AI toàn hệ thống | Công tắc ngắt: hết trần/ngày -> mọi người nhận 429 `ai_capacity` | `AI_GLOBAL_DAILY_LIMIT` |
+| Tạo tài khoản hàng loạt | Tối đa N tài khoản khách mới/IP/ngày | `NEW_GUESTS_PER_IP_PER_DAY` |
+| Rate limit | NestJS throttler + nginx `limit_req` (đăng nhập chặt hơn) | `infra/nginx-giftflow*.conf` |
+| nginx | Chỉ chuyển `/v1/*` và `/health/*` vào Node; header HSTS/nosniff/no-store; ghi đè X-Forwarded-For | |
+
+Quy trình bật App Check: (1) đăng ký SHA-256 của khóa ký + bật Play Integrity API trong Firebase Console; (2) phát hành bản app có gửi token; (3) để `monitor` và xem log `[AppCheck] monitor: ok=... missing=...`; (4) khi tỉ lệ `ok` đủ cao chuyển `enforce`.
+Nên đặt thêm hạn mức chi tiêu (monthly budget) và dùng project key riêng cho GiftFlow ở trang OpenAI.

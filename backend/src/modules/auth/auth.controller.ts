@@ -1,7 +1,9 @@
-import { Body, Controller, Get, Headers, HttpCode, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Headers, HttpCode, Post, Req, UseGuards } from '@nestjs/common';
+import type { Request } from 'express';
 import { JwtService } from '@nestjs/jwt';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
+import { AppCheckGuard } from '../app-check/app-check.guard';
 import { AuthService } from './auth.service';
 import { GoogleAuthDto, GuestAuthDto, RefreshDto } from './auth.dto';
 import { AuthUser, CurrentUser, JwtAuthGuard } from './jwt-auth.guard';
@@ -15,14 +17,16 @@ export class AuthController {
   ) {}
 
   @Post('auth/guest')
+  @UseGuards(AppCheckGuard)
   @HttpCode(200)
   @Throttle({ default: { limit: () => Number(process.env.THROTTLE_GUEST_LIMIT ?? 10), ttl: 60_000 } })
-  guest(@Body() dto: GuestAuthDto) {
-    return this.auth.guest(dto.device_id);
+  guest(@Body() dto: GuestAuthDto, @Req() req: Request) {
+    return this.auth.guest(dto.device_id, req.ip ?? 'unknown');
   }
 
   /** Gửi kèm Authorization (guest) để gộp dữ liệu guest vào tài khoản Google. */
   @Post('auth/google')
+  @UseGuards(AppCheckGuard)
   @HttpCode(200)
   @Throttle({ default: { limit: 20, ttl: 60_000 } })
   async google(@Body() dto: GoogleAuthDto, @Headers('authorization') authz?: string) {

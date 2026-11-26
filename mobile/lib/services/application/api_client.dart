@@ -11,6 +11,7 @@ import 'package:uuid/uuid.dart';
 import '../../configs/app_config.dart';
 import '../../configs/pref_const.dart';
 import '../../models/data_models/parsed_gift.dart';
+import 'app_check_service.dart';
 
 /// Lỗi API thống nhất với backend: `{code, message, request_id, details?}`.
 class ApiException implements Exception {
@@ -171,10 +172,12 @@ class ApiClient {
     bool retried = false,
   }) async {
     if (authed) await ensureAuth();
+    final appCheck = await AppCheckService.token();
     final headers = <String, String>{
       'content-type': 'application/json',
       'accept': 'application/json',
       'x-correlation-id': _uuid.v4(),
+      'x-firebase-appcheck': ?appCheck,
       if (authed && _access != null) 'authorization': 'Bearer $_access',
     };
     final req = http.Request(method, _uri(path, query))

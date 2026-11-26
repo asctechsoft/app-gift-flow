@@ -47,6 +47,16 @@ export interface AppConfig {
   corsOrigins: string[];
   docsEnabled: boolean;
   googleClientIds: string[];
+  /** off | monitor | enforce - xem AppCheckGuard. */
+  appCheckMode: 'off' | 'monitor' | 'enforce';
+  /** Số dự án Firebase (project number) - dùng kiểm tra iss/aud của App Check token. */
+  firebaseProjectNumber: string;
+  /** Danh sách app id Firebase được phép (claim sub). Trống = chấp nhận mọi app của dự án. */
+  appCheckAppIds: string[];
+  /** Trần tổng số lượt AI/ngày của TOÀN hệ thống (công tắc ngắt chi phí OpenAI). 0 = không giới hạn. */
+  aiGlobalDailyLimit: number;
+  /** Số tài khoản khách MỚI tối đa mỗi IP mỗi ngày (chống tạo hàng loạt để lách quota). */
+  newGuestsPerIpPerDay: number;
 }
 
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
@@ -82,6 +92,11 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     corsOrigins: (env.CORS_ORIGINS ?? '').split(',').map((s) => s.trim()).filter(Boolean),
     docsEnabled: bool(env.DOCS_ENABLED, !isProd),
     googleClientIds: (env.GOOGLE_CLIENT_IDS ?? '').split(',').map((x) => x.trim()).filter(Boolean),
+    appCheckMode: (['monitor', 'enforce'] as const).find((m) => m === env.APP_CHECK_MODE) ?? 'off',
+    firebaseProjectNumber: (env.FIREBASE_PROJECT_NUMBER ?? '').trim(),
+    appCheckAppIds: (env.APP_CHECK_APP_IDS ?? '').split(',').map((x) => x.trim()).filter(Boolean),
+    aiGlobalDailyLimit: num(env.AI_GLOBAL_DAILY_LIMIT, 3000),
+    newGuestsPerIpPerDay: num(env.NEW_GUESTS_PER_IP_PER_DAY, 20),
   };
   validateConfig(cfg);
   return cfg;
@@ -100,6 +115,9 @@ export function validateConfig(c: AppConfig): void {
   if (c.aiProvider === 'openai') {
     if (!c.openaiApiKey) problems.push('AI_PROVIDER=openai nhưng chưa có OPENAI_API_KEY');
     if (!c.sttModel || !c.llmModel) problems.push('Thiếu STT_MODEL / LLM_MODEL');
+  }
+  if (c.appCheckMode !== 'off' && !/^[0-9]{6,}$/.test(c.firebaseProjectNumber)) {
+    problems.push('APP_CHECK_MODE bật nhưng thiếu/sai FIREBASE_PROJECT_NUMBER (số dự án Firebase)');
   }
   if (problems.length) {
     throw new Error('Cấu hình không hợp lệ:\n - ' + problems.join('\n - '));

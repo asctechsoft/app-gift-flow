@@ -21,6 +21,7 @@ import 'repository/gift_repository.dart';
 import 'repository/outbox_repository.dart';
 import 'repository/plan_repository.dart';
 import 'services/application/api_client.dart';
+import 'services/application/app_check_service.dart';
 import 'services/application/google_auth_service.dart';
 import 'services/application/sync_service.dart';
 import 'values/app_pages.dart';
@@ -73,6 +74,7 @@ Future<void> _setupLocale() async {
 
 /// Đăng ký repository / service / controller dùng toàn app.
 Future<void> _setupDependencies() async {
+  await AppCheckService.init(); // Firebase + App Check (không chặn app nếu lỗi)
   final api = Get.put(ApiClient(), permanent: true);
   final outbox = Get.put(OutboxRepository(), permanent: true);
   final events = Get.put(EventRepository(outbox), permanent: true);

@@ -97,6 +97,9 @@ export class AiService {
     if (amount === null && !warnings.has('amount_ambiguous') && !warnings.has('amount_out_of_range')) {
       warnings.add('amount_missing');
     }
+    // Cảnh báo thiếu tên/tiền do LLM tự thêm nhưng kết quả chuẩn hoá đã có -> bỏ (tránh bắt duyệt oan).
+    if (name) warnings.delete('name_missing');
+    if (amount !== null) warnings.delete('amount_missing');
     if (!name) warnings.add('name_missing');
     // LLM tự đánh dấu "không chắc" mà không nêu lý do: chỉ chấp nhận bỏ qua khi bằng chứng xác định
     // đủ mạnh (số tiền khớp bộ đọc số xác định VÀ tên xuất hiện nguyên văn trong câu nói).

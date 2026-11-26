@@ -13,6 +13,7 @@ import {
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiBearerAuth, ApiBody, ApiConsumes, ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
+import { AppCheckGuard } from '../app-check/app-check.guard';
 import { AuthUser, CurrentUser, JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { VoiceSegmentDto, VoiceSegmentUploadDto } from './voice.dto';
 import { VoiceService } from './voice.service';
@@ -26,6 +27,7 @@ export class VoiceController {
 
   /** Upload 1 lượt nói (1 phong bì). Idempotent theo request_id. */
   @Post('segments')
+  @UseGuards(AppCheckGuard)
   @HttpCode(200)
   @Throttle({ default: { limit: 40, ttl: 60_000 } })
   @ApiConsumes('multipart/form-data')

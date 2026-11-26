@@ -31,10 +31,30 @@ export class AuthService {
   ) {}
 
   /** Guest auth: định danh thiết bị (hash) -> user ẩn danh có quota riêng. */
-  async guest(deviceId: string): Promise<TokenPair> {
+  /** Bộ đếm tài khoản khách mới theo IP/ngày (bộ nhớ tiến trình; đủ cho 1 instance). */
+  private readonly newGuests = new Map<string, { day: string; n: number }>();
+
+  private checkNewGuestQuota(ip: string): void {
+    const limit = this.cfg.newGuestsPerIpPerDay;
+    if (limit <= 0) return;
+    const day = new Date().toISOString().slice(0, 10);
+    const cur = this.newGuests.get(ip);
+    if (!cur || cur.day !== day) {
+      this.newGuests.set(ip, { day, n: 1 });
+      if (this.newGuests.size > 50_000) this.newGuests.clear(); // chặn phình bộ nhớ
+      return;
+    }
+    if (cur.n >= limit) {
+      throw new AppError(429, 'too_many_new_accounts', 'Quá nhiều tài khoản mới từ địa chỉ này, hãy thử lại ngày mai');
+    }
+    cur.n++;
+  }
+
+  async guest(deviceId: string, ip = 'unknown'): Promise<TokenPair> {
     const providerUserId = sha256(`guest:${deviceId}`);
     let user = await this.users.findOne({ where: { authProvider: 'guest', providerUserId } });
     if (!user) {
+      this.checkNewGuestQuota(ip); // chỉ tính khi thực sự tạo tài khoản mới
       try {
         user = await this.users.save(
           this.users.create({ authProvider: 'guest', providerUserId, displayName: null, plan: 'free' }),
