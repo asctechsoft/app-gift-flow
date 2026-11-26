@@ -257,4 +257,7 @@
     <string name="rec_err_network_stt">Speech recognition needs internet. Check your connection and tap the mic to retry.</string>
     <string name="rec_opt_autosave">Auto-save when clear</string>
     <string name="rec_opt_autosave_note">When off, every envelope waits for your confirmation before counting toward the total.</string>
+    <string name="rec_hint_quiet">No voice heard. Speak louder or hold the microphone closer.</string>
+    <string name="rec_hint_not_recognized">Sound detected but no words recognized. Speak clearly and slower.</string>
+    <string name="rec_hint_sending">About to send... tap the mic to send now</string>
 </resources>

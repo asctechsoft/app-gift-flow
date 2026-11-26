@@ -37,7 +37,8 @@ const UNIT_MULT: Record<string, number> = {
 const NUM_RE = /^\d+(?:[.,]\d+)*$/;
 const ATTACHED_RE = /^(\d[\d.,]*)(k|tr|trieu|nghin|ngan|ty|ti)$/;
 const THOUSANDS_RE = /^\d{1,3}(?:[.,]\d{3})+$/;
-const CURRENCY = new Set(['dong', 'd', 'vnd', 'vnđ', 'dongs']);
+// "đô"/"đồ" là cách nhận dạng giọng nói nghe "đồng": tiền mặc định là VND, bỏ qua.
+const CURRENCY = new Set(['dong', 'd', 'vnd', 'vnđ', 'dongs', 'do']);
 
 type Tok = { raw: string; f: string; idx: number };
 
@@ -127,9 +128,12 @@ function evalRun(run: Tok[]): { value: number; ambiguous: boolean } {
       } else total += cur;
     } else if (absolute) {
       total += cur;
+    } else if (cur >= 10 && cur < 1000) {
+      // Mặc định VND: số trần 10..999 không đơn vị = nghìn đồng (500 -> 500.000đ, 20 -> 20.000đ).
+      total = cur * 1000;
     } else {
       total = cur;
-      ambiguous = true; // số trần < 1000, không rõ đơn vị
+      ambiguous = true; // số trần < 10 ("mừng 2"): triệu hay nghìn? Không đoán.
     }
   }
   return { value: Math.round(total), ambiguous };

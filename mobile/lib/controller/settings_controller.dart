@@ -13,7 +13,7 @@ class SettingsController extends GetxController {
   final RxString displayName = ''.obs;
   final RxString accountEmail = ''.obs;
   final RxBool autoSilenceCut = true.obs;
-  final RxInt silenceMs = 1600.obs;
+  final RxInt silenceMs = 5000.obs;
 
   /// Tự lưu khi AI đọc rõ ràng (tên + số tiền, không nghi trùng).
   final RxBool autoSave = true.obs;
@@ -24,7 +24,7 @@ class SettingsController extends GetxController {
     displayName.value = _p.getString(PrefConst.displayName) ?? '';
     accountEmail.value = _p.getString(PrefConst.accountEmail) ?? '';
     autoSilenceCut.value = _p.getBool(PrefConst.autoSilenceCut) ?? true;
-    silenceMs.value = _p.getInt(PrefConst.silenceMs) ?? 1600;
+    silenceMs.value = _p.getInt(PrefConst.silenceMs) ?? 5000;
     autoSave.value = _p.getBool(PrefConst.autoSave) ?? true;
     locale.value = AscLocale.getAppLocale();
     return this;

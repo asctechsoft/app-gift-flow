@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../controller/recording_controller.dart';
+import '../../services/application/speech_logic.dart';
 import '../../models/data_models/gift_record.dart';
 import '../../models/ui_models/gift_status.dart';
 import '../../utils/money.dart';
@@ -97,6 +98,22 @@ class _RecordingScreenState extends State<RecordingScreen> {
                     );
                   }),
                   Expanded(child: _list()),
+                  Obx(() {
+                    final h = c.hint.value;
+                    if (h == null || h == VoiceHint.none) {
+                      return const SizedBox.shrink();
+                    }
+                    return Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
+                      child: ErrorBanner(
+                        message: h == VoiceHint.tooQuiet
+                            ? 'rec_hint_quiet'.tr
+                            : 'rec_hint_not_recognized'.tr,
+                        warning: true,
+                        icon: Icons.volume_down_rounded,
+                      ),
+                    );
+                  }),
                   Obx(() {
                     final info = c.sttInfo.value;
                     if (info.isEmpty) return const SizedBox.shrink();

@@ -77,7 +77,8 @@ Chỉ trả JSON đúng schema. Quy tắc:
 - guest_name: tên khách đúng như người nói, kể cả xưng hô đứng đầu ("Anh Long"); không bịa; không có tên thì null.
 - relationship_label: chỉ khi người nói nêu rõ (vd "bạn bố", "bên ngoại", "đồng nghiệp"); không suy đoán, thiếu thì null.
 - amount_vnd: số nguyên VND. "hai triệu rưỡi"=2500000, "một triệu hai"=1200000, "500k"=500000.
-- Nếu số tiền < 1000 mà không rõ đơn vị (vd "năm trăm"): amount_vnd=null, needs_review=true, warnings gồm "amount_ambiguous".
+- Tiền mặc định là VND. Số trần 10..999 KHÔNG nêu đơn vị = nghìn đồng: "500"/"năm trăm"=500000, "20"/"hai mươi"=20000, "200"=200000. Các từ "đô", "đồ", "đồng", "đ" ngay sau số chỉ là đơn vị tiền VND, bỏ qua (không phải đô la).
+- Số trần < 10 không nêu đơn vị (vd "mừng 2", "năm"): amount_vnd=null, needs_review=true, warnings gồm "amount_ambiguous".
 - Nếu người nói tự sửa ("hai triệu à nhầm ba triệu"): lấy số cuối, needs_review=true, warnings gồm "self_correction".
 - Thiếu tên: warnings gồm "name_missing", needs_review=true. Thiếu tiền: "amount_missing", needs_review=true.
 - Nếu không phải lời đọc tiền mừng (ồn, người khác nói): tất cả null, needs_review=true, warnings ["no_content"].
@@ -89,6 +90,7 @@ Chỉ trả JSON đúng schema. Quy tắc:
 - Tiếng lóng: "củ" = triệu ("hai củ"=2000000, "hai củ rưỡi"=2500000). Chỉ hiểu vậy khi đứng ngay sau số; "cụ" (người lớn tuổi) không phải đơn vị tiền.
 - Không bao giờ bịa tên hoặc số tiền không có trong lời nói.
 - Văn bản đến từ nhận dạng giọng nói nên có thể sai chính tả: không sửa tên thành tên "đúng hơn" khi không có bằng chứng; nếu tên nghe vô nghĩa hoặc không chắc thì vẫn giữ nguyên chữ nghe được và thêm warnings "name_uncertain", needs_review=true.
+- needs_review chỉ được true khi warnings có ÍT NHẤT MỘT mã cảnh báo; tên + số tiền rõ ràng (kể cả "20k", "hai mươi", "500") thì needs_review=false, warnings=[].
 Không giải thích, không thêm trường.`;
 
 export class OpenAiExtractionProvider implements ExtractionProvider {

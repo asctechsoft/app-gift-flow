@@ -69,7 +69,7 @@ class RecordingController extends GetxController with WidgetsBindingObserver {
   GiftEvent? _event;
   GiftEvent? get event => _event;
 
-  late final UtteranceTracker _tracker = UtteranceTracker(
+  late final TurnBuffer _buffer = TurnBuffer(
     onLive: (t) => liveText.value = t,
     onUtterance: _submitText,
   );
@@ -77,10 +77,18 @@ class RecordingController extends GetxController with WidgetsBindingObserver {
 
   /// Phiên đang mở (màn ghi âm đang hiển thị). Khi false: tuyệt đối không bật mic.
   bool _sessionOpen = false;
-  bool _turnHadUtterance = false;
-  bool _turnEnding = false;
-  Timer? _flushTimer;
-  int _generation = 0; // bỏ qua callback của lượt nghe cũ
+
+  /// Đang trong một lượt nói (từ lúc bắt đầu nghe tới lúc gửi/bỏ).
+  bool _turnOpen = false;
+  bool _turnSent = false;
+  DateTime _turnStart = DateTime.now();
+  DateTime _lastActivity = DateTime.now();
+  double _maxLevel = -2;
+  Timer? _ticker;
+  int _generation = 0; // bỏ qua callback của lần nghe cũ
+
+  /// Nhắc người dùng khi nói quá nhỏ / không nhận ra (null = không nhắc).
+  final Rxn<VoiceHint> hint = Rxn<VoiceHint>();
 
   // Hàng đợi gọi AI tuần tự (giữ thứ tự, không nhầm transcript giữa các lượt).
   Future<void> _queue = Future.value();
@@ -129,7 +137,7 @@ class RecordingController extends GetxController with WidgetsBindingObserver {
       return;
     }
     _policy.userStartedTurn();
-    await _listenTurn();
+    await _beginTurn();
   }
 
   Future<void> openAppSettingsForMic() => openAppSettings();
@@ -164,15 +172,29 @@ class RecordingController extends GetxController with WidgetsBindingObserver {
     }
   }
 
-  /// Một lượt nghe = một phong bì. Chỉ tự gọi lại sau lượt CÓ câu hợp lệ.
-  Future<void> _listenTurn() async {
-    if (!_sessionOpen || !_speechReady || _speech.isListening) return;
-    final gen = ++_generation;
-    _turnHadUtterance = false;
-    _turnEnding = false;
-    _tracker.reset();
+  // ----------------------------------------------------------- một lượt
+
+  /// Bắt đầu một lượt nói (= một phong bì).
+  Future<void> _beginTurn() async {
+    if (!_sessionOpen || !_speechReady || _turnOpen) return;
+    _turnOpen = true;
+    _turnSent = false;
+    _turnStart = DateTime.now();
+    _lastActivity = _turnStart;
+    _maxLevel = -2;
+    _buffer.reset();
     banner.value = null;
+    hint.value = null;
     state.value = RecState.listening;
+    _ticker?.cancel();
+    _ticker = Timer.periodic(const Duration(milliseconds: 400), (_) => _tick());
+    await _startRecognizer();
+  }
+
+  /// Bật bộ nhận dạng của hệ thống (có thể gọi lại nhiều lần trong một lượt).
+  Future<void> _startRecognizer() async {
+    if (!_sessionOpen || !_turnOpen || _speech.isListening) return;
+    final gen = ++_generation;
     try {
       await _speech.listen(
         onResult: (r) => _onResult(r, gen),
@@ -180,7 +202,8 @@ class RecordingController extends GetxController with WidgetsBindingObserver {
         listenOptions: stt.SpeechListenOptions(
           localeId: _locale,
           listenFor: const Duration(seconds: 60),
-          pauseFor: Duration(milliseconds: _settings.silenceMs.value),
+          // Người dùng được ngập ngừng: thời gian chốt do _tick() quyết định.
+          pauseFor: Duration(milliseconds: _settings.silenceMs.value + 3000),
           partialResults: true,
           cancelOnError: false,
           listenMode: stt.ListenMode.dictation,
@@ -189,7 +212,7 @@ class RecordingController extends GetxController with WidgetsBindingObserver {
     } catch (e, st) {
       _log.error('speech listen failed', e, st);
       banner.value = 'rec_err_listen'.tr;
-      state.value = RecState.idle;
+      _closeTurn(send: false);
     }
   }
 
@@ -197,44 +220,64 @@ class RecordingController extends GetxController with WidgetsBindingObserver {
     // dB của recognizer: khoảng -2 (im) .. 10 (to)
     level.value = ((v + 2) / 12).clamp(0.0, 1.0);
     speaking.value = v > 1;
+    if (v > _maxLevel) _maxLevel = v;
+    if (v > 1) _lastActivity = DateTime.now(); // đang nói: chưa tính im lặng
   }
 
   void _onResult(SpeechRecognitionResult r, int gen) {
-    if (gen != _generation) return; // callback muộn của lượt cũ
-    _tracker.onResult(r.recognizedWords, isFinal: r.finalResult);
-    sttInfo.value = 'speech: $_locale · ${_tracker.resultCount}';
-    _flushTimer?.cancel();
-    if (!r.finalResult) {
-      // Máy không gửi final: tự chốt câu khi người nói dừng.
-      _flushTimer = Timer(
-        Duration(milliseconds: _settings.silenceMs.value + 900),
-        () {
-          _tracker.flush();
-          _speech.stop();
-        },
-      );
+    if (gen != _generation || !_turnOpen) return; // callback muộn của lần nghe cũ
+    _buffer.onResult(r.recognizedWords, isFinal: r.finalResult);
+    sttInfo.value = 'speech: $_locale · ${_buffer.resultCount}';
+    _lastActivity = DateTime.now();
+    if (hint.value != null) hint.value = null;
+  }
+
+  /// Chạy mỗi 0,4s trong lượt: tự gửi khi im đủ lâu, nhắc khi nói quá nhỏ.
+  void _tick() {
+    if (!_turnOpen) return;
+    final now = DateTime.now();
+    if (_buffer.hasText) {
+      final quiet = now.difference(_lastActivity).inMilliseconds;
+      if (_settings.autoSilenceCut.value && quiet >= _settings.silenceMs.value) {
+        _closeTurn(send: true); // im lặng đủ lâu (mặc định 5s) -> gửi
+      }
+      return;
     }
+    final h = voiceHint(
+      elapsed: now.difference(_turnStart),
+      hasText: false,
+      maxLevel: _maxLevel,
+    );
+    if (h != VoiceHint.none && hint.value != h) hint.value = h;
+    // Lượt rỗng quá lâu: dừng ở "Sẵn sàng", không giữ mic mãi.
+    if (now.difference(_turnStart).inSeconds >= 20) _closeTurn(send: false);
   }
 
   void _onStatus(String status) {
     if (status != 'done' && status != 'notListening') return;
-    if (!_sessionOpen || _turnEnding) return;
-    _turnEnding = true;
+    if (!_sessionOpen || !_turnOpen) return;
     final gen = _generation;
-    // Chờ kết quả cuối (nếu có) rồi mới quyết định nghe tiếp.
-    Future.delayed(const Duration(milliseconds: 500), () {
-      if (gen != _generation || !_sessionOpen) return;
-      _flushTimer?.cancel();
-      _tracker.flush();
+    // Hệ thống tự ngắt phiên nhận dạng sau ~2s im lặng: chờ final rồi nghe tiếp
+    // để người dùng còn được ngập ngừng; _tick() mới là nơi quyết định gửi.
+    Future.delayed(const Duration(milliseconds: 350), () {
+      if (gen != _generation || !_sessionOpen || !_turnOpen) return;
+      _buffer.commitPartial();
       level.value = 0;
       speaking.value = false;
-      final again = _policy.shouldAutoRestart(
-        turnHadUtterance: _turnHadUtterance,
-      );
-      if (again) {
-        Future.delayed(const Duration(milliseconds: 300), _listenTurn);
-      } else if (state.value == RecState.listening) {
-        state.value = RecState.idle; // chờ người dùng chạm mic
+      if (_buffer.hasText) {
+        final quiet = DateTime.now().difference(_lastActivity).inMilliseconds;
+        if (!_settings.autoSilenceCut.value ||
+            quiet < _settings.silenceMs.value) {
+          _startRecognizer(); // tiếp tục gom câu của lượt này
+        } else {
+          _closeTurn(send: true);
+        }
+      } else if (DateTime.now().difference(_turnStart).inSeconds < 20 &&
+          _maxLevel < 1) {
+        // Chưa có chữ, chưa nghe tiếng: tiếp tục chờ trong lúc nhắc "nói to hơn".
+        _startRecognizer();
+      } else {
+        _closeTurn(send: false);
       }
     });
   }
@@ -244,11 +287,12 @@ class RecordingController extends GetxController with WidgetsBindingObserver {
     if (!_sessionOpen) return;
     final m = e.errorMsg;
     if (m.contains('permission')) {
+      _closeTurn(send: false);
       state.value = RecState.denied;
       return;
     }
     if (m == 'error_no_match' || m == 'error_speech_timeout') {
-      return; // lượt rỗng: onStatus sẽ chuyển sang "sẵn sàng", không tự lặp
+      return; // lượt rỗng: onStatus quyết định tiếp (không tự lặp vô hạn)
     }
     if (m.contains('network')) {
       banner.value = 'rec_err_network_stt'.tr;
@@ -256,28 +300,72 @@ class RecordingController extends GetxController with WidgetsBindingObserver {
       banner.value = 'rec_err_listen'.tr;
     } else if (m.contains('language')) {
       banner.value = 'rec_err_no_vi'.tr;
+    } else {
+      return;
     }
-    // Lỗi khác: onStatus sẽ kết thúc lượt; KHÔNG tự khởi động lại.
+    _closeTurn(send: false);
   }
 
-  /// Nút mic: đang nghe -> chốt câu hiện tại; đang rảnh -> bắt đầu lượt mới.
+  /// Kết thúc lượt: gửi câu đã gom (nếu [send]) rồi nghe tiếp theo chính sách.
+  void _closeTurn({required bool send}) {
+    if (!_turnOpen) return;
+    _turnOpen = false;
+    _ticker?.cancel();
+    _generation++;
+    try {
+      _speech.cancel();
+    } catch (_) {}
+    level.value = 0;
+    speaking.value = false;
+    _buffer.commitPartial();
+    var sent = false;
+    if (send) sent = _buffer.send();
+    _turnSent = sent;
+    if (!sent) {
+      _buffer.reset();
+      // Lượt rỗng: nhắc người dùng vì sao (nói nhỏ / không nhận ra).
+      if (_sessionOpen && hint.value == null && !send) {
+        final h = voiceHint(
+          elapsed: DateTime.now().difference(_turnStart),
+          hasText: false,
+          maxLevel: _maxLevel,
+          grace: Duration.zero,
+        );
+        if (h != VoiceHint.none) hint.value = h;
+      }
+    }
+    if (!_sessionOpen) return;
+    if (_policy.shouldAutoRestart(turnHadUtterance: _turnSent)) {
+      Future.delayed(const Duration(milliseconds: 400), _beginTurn);
+    } else {
+      state.value = RecState.idle; // chờ người dùng chạm mic
+    }
+  }
+
+  /// Nút mic: đang nghe -> gửi ngay câu hiện tại; đang rảnh -> bắt đầu lượt mới.
   Future<void> cutSegment() async {
     if (!_sessionOpen) return;
-    if (_speech.isListening) {
-      await _speech.stop(); // final tới ngay; onStatus xử lý tiếp
+    if (_turnOpen) {
+      try {
+        await _speech.stop(); // final (nếu có) tới ngay
+      } catch (_) {}
+      await Future.delayed(const Duration(milliseconds: 500));
+      _closeTurn(send: true);
       return;
     }
     if (state.value == RecState.idle || state.value == RecState.error) {
       if (!_speechReady && !await _initSpeech()) return;
       _policy.userStartedTurn();
-      await _listenTurn();
+      await _beginTurn();
     }
   }
 
   void _pauseListening() {
+    _turnOpen = false;
+    _ticker?.cancel();
     _generation++;
-    _flushTimer?.cancel();
     _speech.cancel();
+    _buffer.reset();
     level.value = 0;
     speaking.value = false;
     if (state.value == RecState.listening) state.value = RecState.idle;
@@ -286,34 +374,41 @@ class RecordingController extends GetxController with WidgetsBindingObserver {
   /// Rời màn hình: tắt mic ngay, không chờ gì.
   void abort() {
     _sessionOpen = false;
+    _turnOpen = false;
+    _ticker?.cancel();
     _generation++;
-    _flushTimer?.cancel();
     try {
       _speech.cancel();
     } catch (_) {}
     liveText.value = '';
+    hint.value = null;
     level.value = 0;
     speaking.value = false;
     if (state.value != RecState.denied) state.value = RecState.idle;
   }
 
-  /// Kết thúc phiên: chốt câu đang nói, chờ các lượt đang xử lý rồi trả về.
+  /// Kết thúc phiên: gửi nốt câu đang nói, chờ các lượt đang xử lý rồi trả về.
   Future<void> stopSession({bool auto = false}) async {
     if (state.value == RecState.stopping) return;
     state.value = RecState.stopping;
-    _flushTimer?.cancel();
     try {
-      if (_speech.isListening) {
-        await _speech.stop();
-        await Future.delayed(const Duration(milliseconds: 700));
+      if (_turnOpen) {
+        try {
+          await _speech.stop();
+        } catch (_) {}
+        await Future.delayed(const Duration(milliseconds: 600));
+        _sessionOpen = false; // không tự nghe tiếp sau khi gửi
+        _closeTurn(send: true);
       }
-      _tracker.flush();
     } catch (e, st) {
       _log.error('stop failed', e, st);
     }
     _sessionOpen = false;
+    _turnOpen = false;
+    _ticker?.cancel();
     _generation++;
     liveText.value = '';
+    hint.value = null;
     level.value = 0;
     speaking.value = false;
     // Chờ AI xử lý nốt (tối đa 40s) để màn kết quả có số liệu đầy đủ.
@@ -327,7 +422,6 @@ class RecordingController extends GetxController with WidgetsBindingObserver {
   Future<void> _submitText(String text) async {
     final ev = _event;
     if (ev == null) return;
-    _turnHadUtterance = true;
     final g = GiftRecord(
       id: _uuid.v4(), // = request_id (idempotent) = id bản ghi
       eventId: ev.id,

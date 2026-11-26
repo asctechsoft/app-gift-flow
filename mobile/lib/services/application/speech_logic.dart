@@ -14,14 +14,18 @@ String? pickVietnameseLocale(Iterable<String> ids) {
   return anyVi;
 }
 
-/// Gom kết quả partial/final của một lượt nói thành các câu hoàn chỉnh.
+/// Bộ đệm một LƯỢT nói (= một phong bì).
 ///
-/// - partial: chỉ cập nhật chữ đang hiện ([onLive]), KHÔNG gửi đi.
-/// - final: gửi đúng một lần ([onUtterance]).
-/// - Một số máy không bao giờ báo final: [flush] gửi câu partial gần nhất.
-/// - Chống gửi trùng khi callback bị gọi lặp, hoặc final tới sau khi đã flush.
-class UtteranceTracker {
-  UtteranceTracker({
+/// Bộ nhận dạng của hệ thống tự kết thúc sau ~2 giây im lặng; để người dùng được
+/// ngập ngừng, bộ đệm GOM các phiên nhận dạng liên tiếp của cùng một lượt và chỉ
+/// gửi đi khi đủ thời gian im lặng ([send]) hoặc người dùng chạm mic.
+///
+/// - partial: chỉ hiện chữ ([onLive]), KHÔNG gửi.
+/// - final: được chốt vào câu của lượt; callback final lặp lại bị bỏ.
+/// - [commitPartial]: máy không gửi final khi hết phiên -> chốt partial còn sót.
+/// - [send]: gửi cả câu đúng một lần; chống gửi trùng khi retry/callback muộn.
+class TurnBuffer {
+  TurnBuffer({
     required this.onLive,
     required this.onUtterance,
     DateTime Function()? clock,
@@ -35,58 +39,103 @@ class UtteranceTracker {
   final int minLetters;
   final DateTime Function() _clock;
 
+  String _committed = '';
   String _partial = '';
+  String _lastFinal = '';
   String _lastSent = '';
   DateTime _lastSentAt = DateTime.fromMillisecondsSinceEpoch(0);
   int _results = 0;
 
-  /// Câu partial chưa gửi (rỗng nếu không có).
-  String get pending => _partial;
+  static String _join(String a, String b) =>
+      a.isEmpty ? b : (b.isEmpty ? a : '$a $b');
+
+  /// Toàn bộ chữ của lượt hiện tại (đã chốt + đang nói).
+  String get text => _join(_committed, _partial);
+  bool get hasText => text.isNotEmpty;
 
   /// Số lần callback kết quả đã nhận (để hiển thị/chẩn đoán).
   int get resultCount => _results;
 
   void onResult(String words, {required bool isFinal}) {
     _results++;
-    final text = words.trim();
+    final w = words.trim();
     if (isFinal) {
       _partial = '';
-      onLive('');
-      _send(text);
+      if (w.isNotEmpty && w != _lastFinal) {
+        _committed = _join(_committed, w);
+        _lastFinal = w;
+      }
     } else {
-      _partial = text;
-      onLive(text);
+      _partial = w;
     }
+    onLive(text);
   }
 
-  /// Gửi câu partial gần nhất (người nói đã dừng / hết lượt nhưng không có final).
-  void flush() {
-    final t = _partial;
+  /// Hết một phiên nhận dạng mà không có final: giữ lại partial cuối cùng.
+  void commitPartial() {
+    if (_partial.isNotEmpty) {
+      _committed = _join(_committed, _partial);
+      _lastFinal = _partial;
+      _partial = '';
+    }
+    onLive(text);
+  }
+
+  /// Gửi cả câu của lượt. Trả về true nếu thực sự gửi.
+  bool send() {
+    final t = text;
+    _committed = '';
     _partial = '';
+    _lastFinal = '';
     onLive('');
-    if (t.isNotEmpty) _send(t);
+    return _emit(t);
   }
 
-  /// Bắt đầu lượt nghe mới: bỏ mọi partial còn sót, giữ chống-trùng.
+  /// Bắt đầu lượt mới: bỏ mọi chữ còn sót, giữ chống-trùng giữa các lượt.
   void reset() {
+    _committed = '';
     _partial = '';
+    _lastFinal = '';
     onLive('');
   }
 
-  void _send(String text) {
-    if (text.replaceAll(RegExp(r'\s'), '').length < minLetters) return;
+  bool _emit(String t) {
+    if (t.replaceAll(RegExp(r'\s'), '').length < minLetters) return false;
     final recent = _clock().difference(_lastSentAt) < dedupeWindow;
     if (recent &&
         _lastSent.isNotEmpty &&
-        (text == _lastSent ||
-            text.startsWith(_lastSent) ||
-            _lastSent.startsWith(text))) {
-      return;
+        (t == _lastSent || t.startsWith(_lastSent) || _lastSent.startsWith(t))) {
+      return false;
     }
-    _lastSent = text;
+    _lastSent = t;
     _lastSentAt = _clock();
-    onUtterance(text);
+    onUtterance(t);
+    return true;
   }
+}
+
+/// Mức âm thanh để báo người dùng nói quá nhỏ.
+/// [maxLevel] là mức lớn nhất (dB của bộ nhận dạng, khoảng -2 im .. 10 to) trong lượt.
+enum VoiceHint {
+  /// Đang ổn / chưa cần nhắc.
+  none,
+
+  /// Không nghe thấy gì (mic gần như im): nói to hơn / lại gần micro.
+  tooQuiet,
+
+  /// Có tiếng nhưng không nhận ra chữ: nói rõ hơn.
+  notRecognized,
+}
+
+VoiceHint voiceHint({
+  required Duration elapsed,
+  required bool hasText,
+  required double maxLevel,
+  Duration grace = const Duration(seconds: 4),
+  double quietLevel = 1.0,
+}) {
+  if (hasText || elapsed < grace) return VoiceHint.none;
+  return maxLevel < quietLevel ? VoiceHint.tooQuiet : VoiceHint.notRecognized;
 }
 
 /// Chính sách nghe liên tiếp, KHÔNG cho phép vòng lặp mở mic vô hạn:

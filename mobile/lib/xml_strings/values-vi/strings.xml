@@ -271,4 +271,7 @@
     <string name="rec_err_network_stt">Nhận dạng giọng nói cần mạng. Kiểm tra kết nối rồi chạm micro để thử lại.</string>
     <string name="rec_opt_autosave">Tự lưu khi đọc rõ ràng</string>
     <string name="rec_opt_autosave_note">Tắt thì mọi phong bì đều chờ bạn xác nhận trước khi cộng vào tổng.</string>
+    <string name="rec_hint_quiet">Chưa nghe thấy giọng nói. Hãy nói to hơn hoặc đưa micro lại gần miệng.</string>
+    <string name="rec_hint_not_recognized">Nghe có tiếng nhưng chưa nhận ra chữ. Hãy nói rõ và chậm hơn.</string>
+    <string name="rec_hint_sending">Sắp gửi... chạm micro để gửi ngay</string>
 </resources>

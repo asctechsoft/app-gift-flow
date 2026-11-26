@@ -197,9 +197,9 @@ class RecordingOptionsScreen extends StatelessWidget {
                     ),
                     Slider(
                       value: s.silenceMs.value.toDouble(),
-                      min: 800,
-                      max: 3000,
-                      divisions: 11,
+                      min: 2000,
+                      max: 8000,
+                      divisions: 12,
                       activeColor: AppColors.primary,
                       onChanged: s.autoSilenceCut.value
                           ? (v) => s.setSilenceMs(v.round())

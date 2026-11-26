@@ -40,8 +40,14 @@ describe('AI pipeline (bộ câu bắt buộc trong blueprint)', () => {
     expect(r.candidate.needs_review).toBe(false);
   });
 
-  it('Bác Tư năm trăm -> pending_review, không đoán đơn vị', async () => {
+  it('Bác Tư năm trăm -> mặc định VND: 500.000đ, không cần duyệt', async () => {
     const r = await run('Bác Tư năm trăm');
+    expect(r.candidate.amount_vnd).toBe(500_000);
+    expect(r.candidate.warnings).not.toContain('amount_ambiguous');
+  });
+
+  it('số trần < 10 vẫn không đoán -> cần duyệt', async () => {
+    const r = await run('Bác Tư mừng 2');
     expect(r.candidate.amount_vnd).toBeNull();
     expect(r.candidate.needs_review).toBe(true);
     expect(r.candidate.warnings).toContain('amount_ambiguous');
@@ -87,5 +93,22 @@ describe('AI pipeline (bộ câu bắt buộc trong blueprint)', () => {
     const c = ai.normalize({ guest_name: 'Hùng', amount_vnd: 5_000_000_000 }, 'Anh Hùng năm tỷ');
     expect(c.amount_vnd).toBeNull();
     expect(c.warnings).toContain('amount_out_of_range');
+  });
+
+  describe('LLM tự đánh dấu needs_review không nêu lý do', () => {
+    it('bằng chứng xác định đủ mạnh (số tiền khớp + tên có trong câu) -> không bắt duyệt', () => {
+      const c = ai.normalize({ guest_name: 'Anh Hùng', amount_vnd: 20_000, needs_review: true, warnings: [] }, 'anh Hùng 20k');
+      expect(c.amount_vnd).toBe(20_000);
+      expect(c.needs_review).toBe(false);
+    });
+    it('tên không xuất hiện trong câu nói -> vẫn bắt duyệt (không tin tên do LLM tự nghĩ ra)', () => {
+      const c = ai.normalize({ guest_name: 'Anh Quân', amount_vnd: 20_000, needs_review: true, warnings: [] }, 'anh Hùng 20k');
+      expect(c.needs_review).toBe(true);
+      expect(c.warnings).toContain('model_unsure');
+    });
+    it('số tiền LLM khác bộ đọc số -> vẫn bắt duyệt', () => {
+      const c = ai.normalize({ guest_name: 'Anh Hùng', amount_vnd: 2_000_000, needs_review: true, warnings: [] }, 'anh Hùng 20k');
+      expect(c.needs_review).toBe(true);
+    });
   });
 });

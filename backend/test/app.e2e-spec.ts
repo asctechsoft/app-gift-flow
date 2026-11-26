@@ -174,7 +174,7 @@ describe('GiftFlow API (e2e, sql.js in-memory, mock AI)', () => {
     expect(v3.body.duplicate_candidates[0].gift_id).toBe(r1);
 
     // 4) số tiền mơ hồ => pending, không bịa
-    const v4 = await voice(auth, ev, randomUUID(), 'Bác Tư năm trăm').expect(200);
+    const v4 = await voice(auth, ev, randomUUID(), 'Bác Tư mừng 2').expect(200);
     expect(v4.body.state).toBe('pending_review');
     expect(v4.body.candidate.amount_vnd).toBeNull();
 

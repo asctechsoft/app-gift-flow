@@ -98,7 +98,11 @@ export class AiService {
       warnings.add('amount_missing');
     }
     if (!name) warnings.add('name_missing');
-    if (raw?.needs_review === true && warnings.size === 0) warnings.add('model_unsure');
+    // LLM tự đánh dấu "không chắc" mà không nêu lý do: chỉ chấp nhận bỏ qua khi bằng chứng xác định
+    // đủ mạnh (số tiền khớp bộ đọc số xác định VÀ tên xuất hiện nguyên văn trong câu nói).
+    const evidence =
+      amount !== null && rule.amount === amount && !!name && fold(transcript).includes(fold(name));
+    if (raw?.needs_review === true && warnings.size === 0 && !evidence) warnings.add('model_unsure');
 
     return {
       guest_name: name || null,

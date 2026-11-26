@@ -43,8 +43,18 @@ describe('parseVnAmount', () => {
     expect(parseVnAmount('Anh Long mừng').amount).toBeNull();
   });
 
-  it('không đoán khi số < 1000 không rõ đơn vị ("năm trăm")', () => {
-    const r = parseVnAmount('Bác Tư năm trăm');
+  it('mặc định VND: số trần 10..999 = nghìn đồng', () => {
+    expect(amt('Bác Tư năm trăm')).toBe(500_000);
+    expect(amt('Chị Tuyết đi 500')).toBe(500_000);
+    expect(amt('Chị Phương 200 đô')).toBe(200_000); // "đô" = nghe nhầm "đồng"
+    expect(amt('anh Hùng 20')).toBe(20_000);
+    expect(amt('hai mươi nghìn')).toBe(20_000);
+    expect(amt('20k')).toBe(20_000);
+    expect(parseVnAmount('Bác Tư năm trăm').ambiguous).toBe(false);
+  });
+
+  it('không đoán khi số trần < 10 ("mừng 2" là triệu hay nghìn?)', () => {
+    const r = parseVnAmount('Anh Nam mừng 2');
     expect(r.amount).toBeNull();
     expect(r.ambiguous).toBe(true);
   });
