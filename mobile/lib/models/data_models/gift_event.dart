@@ -9,6 +9,7 @@ class GiftEvent {
     required this.eventDate,
     this.location,
     this.status = 'active',
+    this.budgetVnd,
     DateTime? createdAt,
     DateTime? updatedAt,
     this.deletedAt,
@@ -28,6 +29,9 @@ class GiftEvent {
 
   /// active | closed
   final String status;
+
+  /// Tổng ngân sách dự kiến của kế hoạch (VND); null = chưa đặt.
+  final int? budgetVnd;
   final DateTime createdAt;
   final DateTime updatedAt;
   final DateTime? deletedAt;
@@ -55,6 +59,7 @@ class GiftEvent {
     String? eventDate,
     String? location,
     String? status,
+    Object? budgetVnd = _keepBudget,
     DateTime? updatedAt,
     DateTime? deletedAt,
     bool? synced,
@@ -66,6 +71,9 @@ class GiftEvent {
         eventDate: eventDate ?? this.eventDate,
         location: location ?? this.location,
         status: status ?? this.status,
+        budgetVnd: identical(budgetVnd, _keepBudget)
+            ? this.budgetVnd
+            : budgetVnd as int?,
         createdAt: createdAt,
         updatedAt: updatedAt ?? DateTime.now(),
         deletedAt: deletedAt ?? this.deletedAt,
@@ -79,6 +87,7 @@ class GiftEvent {
         'event_date': eventDate,
         'location': location,
         'status': status,
+        'budget_vnd': budgetVnd,
         'created_at': createdAt.millisecondsSinceEpoch,
         'updated_at': updatedAt.millisecondsSinceEpoch,
         'deleted_at': deletedAt?.millisecondsSinceEpoch,
@@ -92,6 +101,7 @@ class GiftEvent {
         eventDate: m['event_date'] as String,
         location: m['location'] as String?,
         status: (m['status'] as String?) ?? 'active',
+        budgetVnd: m['budget_vnd'] as int?,
         createdAt: DateTime.fromMillisecondsSinceEpoch(m['created_at'] as int),
         updatedAt: DateTime.fromMillisecondsSinceEpoch(m['updated_at'] as int),
         deletedAt: m['deleted_at'] == null
@@ -107,6 +117,9 @@ class GiftEvent {
         'event_date': eventDate,
         'location': location,
         'status': status,
+        'budget_vnd': budgetVnd,
         'updated_at': updatedAt.toUtc().toIso8601String(),
       };
 }
+
+const Object _keepBudget = Object();

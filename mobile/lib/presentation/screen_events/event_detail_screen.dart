@@ -23,6 +23,7 @@ import '../common_components/ui_kit.dart';
 import '../screen_gifts/gift_filter_sheet.dart';
 import '../screen_gifts/gifts_tab.dart';
 import '../screen_gifts/quick_entry_sheet.dart';
+import '../screen_plan/plan_entry_card.dart';
 import 'event_actions.dart';
 
 /// Chi tiết sự kiện với 4 tab: Tổng quan · Phong bì · Khách · Thống kê.
@@ -399,6 +400,8 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
           ),
         ],
       ),
+      const SizedBox(height: 12),
+      PlanEntryCard(eventId: eventId),
       const SizedBox(height: 12),
       SoftCard(
         onTap: () => _setExpected(expected),

@@ -43,6 +43,8 @@ export class GiftEvent {
   @Column({ type: 'varchar', length: 10 }) eventDate: string;
   @Column({ type: 'varchar', length: 300, nullable: true }) location: string | null;
   @Column({ type: 'varchar', length: 20, default: 'active' }) status: string;
+  /** Tổng ngân sách dự kiến của kế hoạch sự kiện (VND), null = chưa đặt. */
+  @Column({ type: 'integer', nullable: true }) budgetVnd: number | null;
   @Column({ type: Date }) createdAt: Date;
   @Column({ type: Date }) updatedAt: Date;
   @Column({ type: Date, nullable: true }) deletedAt: Date | null;
@@ -130,6 +132,50 @@ export class ExportJob {
   @CreateDateColumn() createdAt: Date;
 }
 
+/** Một khoản chi trong kế hoạch (ngân sách) của sự kiện. KHÔNG liên quan tiền mừng. */
+@Entity('plan_items')
+@Index('idx_plan_items_event', ['eventId', 'category'])
+export class PlanItem {
+  @PrimaryColumn({ type: 'varchar', length: 36 }) id: string;
+  @Column({ type: 'varchar', length: 36 }) eventId: string;
+  @Column({ type: 'varchar', length: 36 }) ownerId: string;
+  @Column({ type: 'varchar', length: 30 }) category: string;
+  @Column({ type: 'varchar', length: 200 }) name: string;
+  @Column({ type: 'integer', default: 0 }) plannedVnd: number;
+  @Column({ type: 'integer', default: 0 }) paidVnd: number;
+  /** planned | deposit | paid */
+  @Column({ type: 'varchar', length: 12, default: 'planned' }) status: string;
+  @Column({ type: 'varchar', length: 200, nullable: true }) vendor: string | null;
+  @Column({ type: 'varchar', length: 10, nullable: true }) dueDate: string | null;
+  @Column({ type: 'varchar', length: 1000, nullable: true }) note: string | null;
+  @Column({ type: Date }) createdAt: Date;
+  @Column({ type: Date }) updatedAt: Date;
+  @Column({ type: Date, nullable: true }) deletedAt: Date | null;
+}
+
+/** Khách mời DỰ KIẾN (danh sách lên kế hoạch trước lễ). Không có tiền mừng. */
+@Entity('plan_guests')
+@Index('idx_plan_guests_event', ['eventId', 'inviteStatus'])
+export class PlanGuest {
+  @PrimaryColumn({ type: 'varchar', length: 36 }) id: string;
+  @Column({ type: 'varchar', length: 36 }) eventId: string;
+  @Column({ type: 'varchar', length: 36 }) ownerId: string;
+  @Column({ type: 'varchar', length: 200 }) name: string;
+  @Column({ type: 'varchar', length: 100, nullable: true }) relationship: string | null;
+  /** mine | parents (khách của mình / của bố mẹ) */
+  @Column({ type: 'varchar', length: 10, default: 'mine' }) side: string;
+  /** Số người đi cùng (tính cả khách), tối thiểu 1. */
+  @Column({ type: 'integer', default: 1 }) partySize: number;
+  /** planned | invited | confirmed | declined */
+  @Column({ type: 'varchar', length: 12, default: 'planned' }) inviteStatus: string;
+  @Column({ type: 'varchar', length: 30, nullable: true }) phone: string | null;
+  @Column({ type: 'varchar', length: 1000, nullable: true }) note: string | null;
+  @Column({ type: 'varchar', length: 400, default: '' }) searchKey: string;
+  @Column({ type: Date }) createdAt: Date;
+  @Column({ type: Date }) updatedAt: Date;
+  @Column({ type: Date, nullable: true }) deletedAt: Date | null;
+}
+
 export const ALL_ENTITIES = [
   User,
   RefreshToken,
@@ -139,4 +185,6 @@ export const ALL_ENTITIES = [
   AuditLog,
   UsageQuota,
   ExportJob,
+  PlanItem,
+  PlanGuest,
 ];

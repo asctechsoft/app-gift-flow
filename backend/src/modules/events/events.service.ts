@@ -14,6 +14,7 @@ export const eventToApi = (e: GiftEvent) => ({
   event_date: e.eventDate,
   location: e.location,
   status: e.status,
+  budget_vnd: e.budgetVnd,
   created_at: e.createdAt.toISOString(),
   updated_at: e.updatedAt.toISOString(),
   deleted_at: e.deletedAt ? e.deletedAt.toISOString() : null,
@@ -62,6 +63,7 @@ export class EventsService {
         eventDate: dto.event_date,
         location: dto.location?.trim() || null,
         status: dto.status ?? 'active',
+        budgetVnd: dto.budget_vnd ?? null,
         createdAt: now,
         updatedAt: now,
         deletedAt: null,
@@ -85,6 +87,7 @@ export class EventsService {
       eventDate: dto.event_date,
       location: dto.location?.trim() || null,
       status: dto.status ?? existing.status,
+      budgetVnd: dto.budget_vnd !== undefined ? dto.budget_vnd : existing.budgetVnd,
       updatedAt: incoming,
       deletedAt: null, // upsert = event đang sống (client đã hoàn tác xoá)
     });
@@ -101,6 +104,7 @@ export class EventsService {
     if (dto.event_date !== undefined) e.eventDate = dto.event_date;
     if (dto.location !== undefined) e.location = dto.location?.trim() || null;
     if (dto.status !== undefined) e.status = dto.status;
+    if (dto.budget_vnd !== undefined) e.budgetVnd = dto.budget_vnd;
     e.updatedAt = new Date();
     const saved = await this.repo.save(e);
     await this.audit.record(ownerId, 'event', id, 'update', before, { status: saved.status });

@@ -36,6 +36,7 @@ Future<bool> showEventMenu(
           const SizedBox(height: 8),
           if (withDetail)
             tile(Icons.open_in_new_rounded, 'event_open_detail'.tr, 'detail'),
+          tile(Icons.edit_note_rounded, 'plan_title'.tr, 'plan'),
           tile(Icons.check_circle_outline_rounded, 'event_select'.tr, 'select'),
           tile(Icons.edit_outlined, 'edit'.tr, 'edit'),
           tile(
@@ -53,6 +54,8 @@ Future<bool> showEventMenu(
   switch (choice) {
     case 'detail':
       Get.toNamed(RouteName.eventDetail, arguments: {'id': e.id});
+    case 'plan':
+      Get.toNamed(RouteName.plan, arguments: {'id': e.id});
     case 'select':
       if (e.isClosed) Toast.show('event_closed_no_record'.tr);
       await c.setActive(e.id);

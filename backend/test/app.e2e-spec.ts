@@ -267,6 +267,142 @@ describe('GiftFlow API (e2e, sql.js in-memory, mock AI)', () => {
     });
   });
 
+  describe('Kế hoạch sự kiện (ngân sách + khách mời dự kiến)', () => {
+    const item = (ev: string, over: Record<string, unknown> = {}) => ({
+      event_id: ev,
+      category: 'venue',
+      name: 'Nhà hàng Hoa Sen',
+      planned_vnd: 100_000_000,
+      paid_vnd: 30_000_000,
+      ...over,
+    });
+    const guestBody = (ev: string, over: Record<string, unknown> = {}) => ({
+      event_id: ev,
+      name: 'Anh Long',
+      relationship: 'Bạn thân',
+      side: 'mine',
+      party_size: 2,
+      ...over,
+    });
+
+    it('khoản chi: tạo/sửa (upsert idempotent, LWW), xoá mềm, trạng thái tự suy ra', async () => {
+      const { auth } = await guest();
+      const ev = await mkEvent(auth);
+      const id = randomUUID();
+      const a = await request(http).put(`/v1/plan/items/${id}`).set('Authorization', auth)
+        .send({ ...item(ev), updated_at: '2026-05-01T10:00:00.000Z' }).expect(200);
+      expect(a.body.status).toBe('deposit'); // trả 30/100tr
+      const stale = await request(http).put(`/v1/plan/items/${id}`).set('Authorization', auth)
+        .send({ ...item(ev, { planned_vnd: 1 }), updated_at: '2026-05-01T09:00:00.000Z' }).expect(200);
+      expect(stale.body.planned_vnd).toBe(100_000_000); // bản cũ hơn bị bỏ
+      const fresh = await request(http).put(`/v1/plan/items/${id}`).set('Authorization', auth)
+        .send({ ...item(ev, { paid_vnd: 100_000_000 }), updated_at: '2026-05-01T11:00:00.000Z' }).expect(200);
+      expect(fresh.body.status).toBe('paid');
+      const list = await request(http).get(`/v1/events/${ev}/plan/items`).set('Authorization', auth).expect(200);
+      expect(list.body.items).toHaveLength(1);
+      await request(http).delete(`/v1/plan/items/${id}`).set('Authorization', auth).expect(204);
+      await request(http).delete(`/v1/plan/items/${id}`).set('Authorization', auth).expect(204); // idempotent
+      const after = await request(http).get(`/v1/events/${ev}/plan/items`).set('Authorization', auth).expect(200);
+      expect(after.body.items).toHaveLength(0);
+    });
+
+    it('khoản chi: validate danh mục/số tiền/ngày', async () => {
+      const { auth } = await guest();
+      const ev = await mkEvent(auth);
+      const put = (body: unknown) =>
+        request(http).put(`/v1/plan/items/${randomUUID()}`).set('Authorization', auth).send(body as object);
+      await put(item(ev, { category: 'xyz' })).expect(400);
+      await put(item(ev, { planned_vnd: -1 })).expect(400);
+      await put(item(ev, { name: '' })).expect(400);
+      await put(item(ev, { due_date: '01/04/2026' })).expect(400);
+      await put(item(ev, { status: 'weird' })).expect(400);
+      await put(item(ev, { due_date: '2026-04-01', vendor: 'Studio A' })).expect(200);
+    });
+
+    it('khách dự kiến: tạo/sửa trạng thái mời, số người đi cùng, xoá mềm', async () => {
+      const { auth } = await guest();
+      const ev = await mkEvent(auth);
+      const id = randomUUID();
+      const g = await request(http).put(`/v1/plan/guests/${id}`).set('Authorization', auth).send(guestBody(ev)).expect(200);
+      expect(g.body).toMatchObject({ name: 'Anh Long', party_size: 2, invite_status: 'planned', side: 'mine' });
+      const up = await request(http).put(`/v1/plan/guests/${id}`).set('Authorization', auth)
+        .send({ ...guestBody(ev), invite_status: 'confirmed', updated_at: new Date(Date.now() + 1000).toISOString() })
+        .expect(200);
+      expect(up.body.invite_status).toBe('confirmed');
+      const put = (b: object) => request(http).put(`/v1/plan/guests/${randomUUID()}`).set('Authorization', auth).send(b);
+      await put(guestBody(ev, { party_size: 0 })).expect(400);
+      await put(guestBody(ev, { side: 'x' })).expect(400);
+      await put(guestBody(ev, { invite_status: 'x' })).expect(400);
+      await request(http).delete(`/v1/plan/guests/${id}`).set('Authorization', auth).expect(204);
+      const list = await request(http).get(`/v1/events/${ev}/plan/guests`).set('Authorization', auth).expect(200);
+      expect(list.body.items).toHaveLength(0);
+    });
+
+    it('tổng hợp: ngân sách, đã trả, còn lại, theo danh mục, số khách/số người, KHÔNG dính tiền mừng', async () => {
+      const { auth } = await guest();
+      const ev = await mkEvent(auth);
+      await request(http).put(`/v1/events/${ev}`).set('Authorization', auth)
+        .send({ name: 'Lễ cưới Minh & Trang', event_date: '2026-05-24', type: 'wedding', budget_vnd: 300_000_000 })
+        .expect(200);
+      for (const [cat, planned, paid] of [
+        ['venue', 100_000_000, 30_000_000],
+        ['catering', 150_000_000, 0],
+        ['photo', 20_000_000, 20_000_000],
+      ] as const) {
+        await request(http).put(`/v1/plan/items/${randomUUID()}`).set('Authorization', auth)
+          .send(item(ev, { category: cat, planned_vnd: planned, paid_vnd: paid })).expect(200);
+      }
+      let i = 0;
+      for (const st of ['planned', 'invited', 'confirmed', 'declined']) {
+        await request(http).put(`/v1/plan/guests/${randomUUID()}`).set('Authorization', auth)
+          .send(guestBody(ev, { name: `Khách ${i}`, invite_status: st, party_size: 2, side: i % 2 ? 'mine' : 'parents' }))
+          .expect(200);
+        i++;
+      }
+      const s = await request(http).get(`/v1/events/${ev}/plan/summary`).set('Authorization', auth).expect(200);
+      expect(s.body).toMatchObject({
+        budget_vnd: 300_000_000,
+        planned_vnd: 270_000_000,
+        paid_vnd: 50_000_000,
+        remaining_to_pay_vnd: 220_000_000,
+        budget_left_vnd: 30_000_000,
+        over_budget: false,
+      });
+      expect(s.body.by_category[0]).toMatchObject({ category: 'catering', planned_vnd: 150_000_000 });
+      expect(s.body.guests).toMatchObject({ count: 4, headcount: 8, headcount_expected: 6 });
+      expect(s.body.guests.by_status).toMatchObject({ planned: 1, invited: 1, confirmed: 1, declined: 1 });
+      expect(s.body.guests.by_side.mine + s.body.guests.by_side.parents).toBe(4);
+      await request(http).put(`/v1/plan/items/${randomUUID()}`).set('Authorization', auth)
+        .send(item(ev, { category: 'honeymoon', planned_vnd: 60_000_000, paid_vnd: 0 })).expect(200);
+      const over = await request(http).get(`/v1/events/${ev}/plan/summary`).set('Authorization', auth).expect(200);
+      expect(over.body.over_budget).toBe(true);
+      expect(over.body.budget_left_vnd).toBe(-30_000_000);
+      // kế hoạch không làm đổi thống kê tiền mừng
+      const stats = await request(http).get(`/v1/events/${ev}/stats`).set('Authorization', auth).expect(200);
+      expect(stats.body.confirmed.total_vnd).toBe(0);
+      const evGet = await request(http).get(`/v1/events/${ev}`).set('Authorization', auth).expect(200);
+      expect(evGet.body.budget_vnd).toBe(300_000_000);
+    });
+
+    it('IDOR: người khác không đọc/sửa/xoá kế hoạch của mình (404)', async () => {
+      const a = await guest();
+      const b = await guest();
+      const ev = await mkEvent(a.auth);
+      const itemId = randomUUID();
+      const guestId = randomUUID();
+      await request(http).put(`/v1/plan/items/${itemId}`).set('Authorization', a.auth).send(item(ev)).expect(200);
+      await request(http).put(`/v1/plan/guests/${guestId}`).set('Authorization', a.auth).send(guestBody(ev)).expect(200);
+      await request(http).get(`/v1/events/${ev}/plan/summary`).set('Authorization', b.auth).expect(404);
+      await request(http).get(`/v1/events/${ev}/plan/items`).set('Authorization', b.auth).expect(404);
+      await request(http).get(`/v1/events/${ev}/plan/guests`).set('Authorization', b.auth).expect(404);
+      await request(http).put(`/v1/plan/items/${itemId}`).set('Authorization', b.auth).send(item(ev)).expect(404);
+      await request(http).put(`/v1/plan/guests/${guestId}`).set('Authorization', b.auth).send(guestBody(ev)).expect(404);
+      await request(http).delete(`/v1/plan/items/${itemId}`).set('Authorization', b.auth).expect(404);
+      await request(http).delete(`/v1/plan/guests/${guestId}`).set('Authorization', b.auth).expect(404);
+      await request(http).get(`/v1/events/${ev}/plan/items`).expect(401);
+    });
+  });
+
   it('voice: nhận văn bản đã nhận dạng trên máy (không audio) -> trích xuất, bỏ qua STT', async () => {
     const { auth } = await guest();
     const ev = await mkEvent(auth);

@@ -278,4 +278,27 @@ class ApiClient {
     );
     return ParsedGift.fromJson(j);
   }
+
+  // ------------------------------------------------------ kế hoạch sự kiện
+
+  Future<void> putPlanItem(String id, Map<String, Object?> body) =>
+      _send('PUT', '/v1/plan/items/$id', body: body);
+
+  Future<void> deletePlanItem(String id) => _send('DELETE', '/v1/plan/items/$id');
+
+  Future<List<Map<String, dynamic>>> listPlanItems(String eventId) async {
+    final j = await _send('GET', '/v1/events/$eventId/plan/items');
+    return ((j['items'] as List?) ?? const []).cast<Map<String, dynamic>>();
+  }
+
+  Future<void> putPlanGuest(String id, Map<String, Object?> body) =>
+      _send('PUT', '/v1/plan/guests/$id', body: body);
+
+  Future<void> deletePlanGuest(String id) =>
+      _send('DELETE', '/v1/plan/guests/$id');
+
+  Future<List<Map<String, dynamic>>> listPlanGuests(String eventId) async {
+    final j = await _send('GET', '/v1/events/$eventId/plan/guests');
+    return ((j['items'] as List?) ?? const []).cast<Map<String, dynamic>>();
+  }
 }

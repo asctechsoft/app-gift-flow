@@ -2,7 +2,7 @@
 class Schema {
   Schema._();
 
-  static const int version = 2;
+  static const int version = 3;
 
   static const String createEvents = '''
 CREATE TABLE events (
@@ -12,6 +12,7 @@ CREATE TABLE events (
   event_date TEXT NOT NULL,
   location TEXT,
   status TEXT NOT NULL DEFAULT 'active',
+  budget_vnd INTEGER,
   created_at INTEGER NOT NULL,
   updated_at INTEGER NOT NULL,
   deleted_at INTEGER,
@@ -58,6 +59,52 @@ CREATE TABLE outbox (
 
   static const String migrateV2AddSide =
       "ALTER TABLE gifts ADD COLUMN side TEXT NOT NULL DEFAULT 'mine'";
+
+  /// v3: kế hoạch sự kiện - ngân sách tổng, khoản chi, khách mời dự kiến.
+  static const String migrateV3AddBudget =
+      'ALTER TABLE events ADD COLUMN budget_vnd INTEGER';
+
+  static const String createPlanItems = '''
+CREATE TABLE plan_items (
+  id TEXT PRIMARY KEY,
+  event_id TEXT NOT NULL,
+  category TEXT NOT NULL,
+  name TEXT NOT NULL,
+  planned_vnd INTEGER NOT NULL DEFAULT 0,
+  paid_vnd INTEGER NOT NULL DEFAULT 0,
+  status TEXT NOT NULL DEFAULT 'planned',
+  vendor TEXT,
+  due_date TEXT,
+  note TEXT,
+  created_at INTEGER NOT NULL,
+  updated_at INTEGER NOT NULL,
+  deleted_at INTEGER,
+  synced INTEGER NOT NULL DEFAULT 0
+)''';
+
+  static const String idxPlanItems =
+      'CREATE INDEX idx_plan_items_event ON plan_items(event_id, category)';
+
+  static const String createPlanGuests = '''
+CREATE TABLE plan_guests (
+  id TEXT PRIMARY KEY,
+  event_id TEXT NOT NULL,
+  name TEXT NOT NULL,
+  relationship TEXT,
+  side TEXT NOT NULL DEFAULT 'mine',
+  party_size INTEGER NOT NULL DEFAULT 1,
+  invite_status TEXT NOT NULL DEFAULT 'planned',
+  phone TEXT,
+  note TEXT,
+  search_key TEXT NOT NULL DEFAULT '',
+  created_at INTEGER NOT NULL,
+  updated_at INTEGER NOT NULL,
+  deleted_at INTEGER,
+  synced INTEGER NOT NULL DEFAULT 0
+)''';
+
+  static const String idxPlanGuests =
+      'CREATE INDEX idx_plan_guests_event ON plan_guests(event_id, invite_status)';
 
   static const String idxOutboxEntity =
       'CREATE UNIQUE INDEX idx_outbox_entity ON outbox(entity, entity_id)';

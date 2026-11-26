@@ -7,21 +7,24 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../configs/pref_const.dart';
 import '../../models/data_models/gift_event.dart';
 import '../../models/data_models/gift_record.dart';
+import '../../models/data_models/plan_models.dart';
 import '../../models/ui_models/gift_status.dart';
 import '../../repository/event_repository.dart';
 import '../../repository/gift_repository.dart';
 import '../../repository/outbox_repository.dart';
+import '../../repository/plan_repository.dart';
 import 'api_client.dart';
 
 /// Đồng bộ local-first: mọi thay đổi đã ghi SQLite + outbox; service này đẩy
 /// outbox lên backend khi có mạng, và kéo dữ liệu về khi khôi phục.
 class SyncService extends GetxService {
-  SyncService(this._api, this._outbox, this._events, this._gifts);
+  SyncService(this._api, this._outbox, this._events, this._gifts, this._plan);
 
   final ApiClient _api;
   final OutboxRepository _outbox;
   final EventRepository _events;
   final GiftRepository _gifts;
+  final PlanRepository _plan;
   static final AscLogger _log = AscLogger();
 
   final RxInt pendingCount = 0.obs;
@@ -135,6 +138,24 @@ class SyncService extends GetxService {
       if (e == null) return;
       await _api.putEvent(e.id, e.toApi());
       await _events.markSynced(e.id, e.updatedAt);
+    } else if (item.entity == 'plan_item') {
+      final i = await _plan.getItemRaw(item.entityId);
+      if (item.action == 'delete' || (i?.deletedAt != null)) {
+        await _ignore404(() => _api.deletePlanItem(item.entityId));
+        return;
+      }
+      if (i == null) return;
+      await _api.putPlanItem(i.id, i.toApi());
+      await _plan.markItemSynced(i.id, i.updatedAt);
+    } else if (item.entity == 'plan_guest') {
+      final g = await _plan.getGuestRaw(item.entityId);
+      if (item.action == 'delete' || (g?.deletedAt != null)) {
+        await _ignore404(() => _api.deletePlanGuest(item.entityId));
+        return;
+      }
+      if (g == null) return;
+      await _api.putPlanGuest(g.id, g.toApi());
+      await _plan.markGuestSynced(g.id, g.updatedAt);
     } else {
       final g = await _gifts.getRaw(item.entityId);
       if (item.action == 'delete' || (g?.deletedAt != null)) {
@@ -168,6 +189,14 @@ class SyncService extends GetxService {
     for (final j in events) {
       await _events.upsertFromServer(_eventFromJson(j));
       count++;
+      for (final pj in await _api.listPlanItems(j['id'] as String)) {
+        await _plan.upsertItemFromServer(PlanItem.fromApi(pj));
+        count++;
+      }
+      for (final pj in await _api.listPlanGuests(j['id'] as String)) {
+        await _plan.upsertGuestFromServer(PlanGuest.fromApi(pj));
+        count++;
+      }
       String? cursor;
       do {
         final page = await _api.listGifts(j['id'] as String, cursor: cursor);
@@ -191,6 +220,7 @@ class SyncService extends GetxService {
         eventDate: j['event_date'] as String,
         location: j['location'] as String?,
         status: (j['status'] as String?) ?? 'active',
+        budgetVnd: (j['budget_vnd'] as num?)?.toInt(),
         createdAt: DateTime.parse(j['created_at'] as String).toLocal(),
         updatedAt: DateTime.parse(j['updated_at'] as String).toLocal(),
         deletedAt: j['deleted_at'] == null

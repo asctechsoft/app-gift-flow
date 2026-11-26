@@ -30,6 +30,10 @@ import 'package:gift_flow/presentation/screens_settings/settings_tab.dart';
 import 'package:gift_flow/repository/event_repository.dart';
 import 'package:gift_flow/repository/gift_repository.dart';
 import 'package:gift_flow/repository/outbox_repository.dart';
+import 'package:gift_flow/repository/plan_repository.dart';
+import 'package:gift_flow/controller/plan_controller.dart';
+import 'package:gift_flow/presentation/screen_plan/plan_screen.dart';
+import 'package:gift_flow/presentation/screen_plan/plan_sheets.dart';
 import 'package:gift_flow/services/application/api_client.dart';
 import 'package:gift_flow/services/application/sync_service.dart';
 import 'package:gift_flow/values/app_theme.dart';
@@ -90,11 +94,13 @@ void main() {
     final outbox = Get.put(OutboxRepository());
     events = Get.put(EventRepository(outbox));
     gifts = Get.put(GiftRepository(outbox));
+    final plan = Get.put(PlanRepository(outbox));
     final settings = await Get.put(SettingsController()).init();
-    final sync = Get.put(SyncService(ApiClient(), outbox, events, gifts));
+    final sync = Get.put(SyncService(ApiClient(), outbox, events, gifts, plan));
     final eventC = Get.put(EventController(events, gifts, settings, sync));
     Get.put(GiftController(gifts, eventC, sync));
     Get.put(GiftListController(gifts, Get.find<GiftController>(), eventC, sync));
+    Get.put(PlanController(plan, eventC, sync));
     Get.put(ShellController());
 
     // ---- dữ liệu mẫu giống bản vẽ
@@ -138,6 +144,28 @@ void main() {
         ),
         enqueue: false,
       );
+    }
+    await events.save(wedding.copyWith(budgetVnd: 300000000));
+    final pc = Get.find<PlanController>();
+    await eventC.load();
+    await pc.open('e1');
+    for (final r in <(String, String, int, int, String?)>[
+      ('venue', 'Nhà hàng Hoa Sen', 100000000, 30000000, 'Hoa Sen'),
+      ('catering', 'Tiệc cưới 30 bàn', 120000000, 0, null),
+      ('catering', 'Rượu & nước uống', 20000000, 0, null),
+      ('attire', 'Váy cưới', 25000000, 25000000, 'Áo cưới Anna'),
+      ('photo', 'Chụp ảnh cưới', 15000000, 5000000, 'Studio A'),
+      ('decor', 'Hoa & sân khấu', 22000000, 0, null),
+    ]) {
+      await pc.saveItem(pc.newItem(category: r.$1, name: r.$2, planned: r.$3, paid: r.$4, vendor: r.$5));
+    }
+    for (final g in <(String, String, int, String, String)>[
+      ('Anh Long', 'Bạn thân', 2, 'mine', 'confirmed'),
+      ('Chị Mai', 'Đồng nghiệp', 1, 'mine', 'invited'),
+      ('Bác Hùng', 'Bạn bố', 4, 'parents', 'planned'),
+      ('Cô Lan', 'Họ hàng', 3, 'parents', 'declined'),
+    ]) {
+      await pc.saveGuest(pc.newGuest(name: g.$1, relationship: g.$2, partySize: g.$3, side: g.$4, status: g.$5));
     }
     await eventC.load();
     await Get.find<GiftController>().reload();
@@ -241,9 +269,98 @@ void main() {
     );
   });
 
+  test('Kế hoạch: tổng hợp ngân sách + khách từ SQLite', () async {
+    final pc = Get.find<PlanController>();
+    await pc.open('e1');
+    final s = pc.summary.value;
+    expect(s.budgetVnd, 300000000);
+    expect(s.plannedVnd, 302000000);
+    expect(s.paidVnd, 60000000);
+    expect(s.overBudget, isTrue);
+    expect(s.budgetLeftVnd, -2000000);
+    expect(s.byCategory.first.category, 'catering');
+    expect(s.guestCount, 4);
+    expect(s.headcount, 10);
+    expect(s.headcountExpected, 7); // bỏ khách từ chối
+    expect(s.byStatus['confirmed'], 1);
+    // lọc khách theo nhóm
+    pc.guestSide.value = 'parents';
+    await pc.reload();
+    expect(pc.guests.length, 2);
+    pc.guestSide.value = null;
+    pc.guestStatus.value = 'declined';
+    await pc.reload();
+    expect(pc.guests.single.name, 'Cô Lan');
+    pc.guestStatus.value = null;
+    // dán danh sách: bỏ tên trùng, đọc quan hệ + số người
+    await pc.reload();
+    final n = await pc.addGuestsFromText(
+      'Em Nam - Bạn - 2\nanh long\n- Chị Hoa, đồng nghiệp\n\n',
+      side: 'mine',
+    );
+    expect(n, 2); // "anh long" trùng Anh Long
+    final all = (await Get.find<PlanRepository>().guests('e1')).map((g) => g.name).toSet();
+    expect(all, containsAll(['Em Nam', 'Chị Hoa']));
+    // xoá mềm + hoàn tác
+    final nam = (await Get.find<PlanRepository>().guests('e1')).firstWhere((g) => g.name == 'Em Nam');
+    expect(nam.partySize, 2);
+    await pc.deleteGuest(nam.id);
+    expect((await Get.find<PlanRepository>().guests('e1')).any((g) => g.id == nam.id), isFalse);
+    await pc.undoDeleteGuest(nam.id);
+    expect((await Get.find<PlanRepository>().guests('e1')).any((g) => g.id == nam.id), isTrue);
+    // mẫu kế hoạch không nhân đôi
+    final added = await pc.applyWeddingTemplate();
+    expect(added, greaterThan(0));
+    expect(await pc.applyWeddingTemplate(), 0);
+    // kế hoạch KHÔNG ảnh hưởng thống kê tiền mừng
+    expect((await Get.find<GiftRepository>().stats('e1')).totalVnd, 28700000);
+    await pc.reload();
+  });
+
+  for (final which in ['item', 'guest', 'bulk']) {
+    testWidgets('Sheet kế hoạch: $which', (t) async {
+      Get.testMode = true;
+      final pc = Get.find<PlanController>();
+      await pumpShot(
+        t,
+        Builder(
+          builder: (ctx) {
+            Get.routing.args = {'id': 'e1'};
+            return const PlanScreen();
+          },
+        ),
+        'plan_sheet_$which',
+        settleMs: 1500,
+        after: () async {
+          if (which == 'item') showPlanItemSheet(pc);
+          if (which == 'guest') showPlanGuestSheet(pc);
+          if (which == 'bulk') showPlanBulkGuestSheet(pc);
+          await t.pump(const Duration(milliseconds: 700));
+        },
+      );
+    });
+  }
+
   testWidgets('Cài đặt', (t) async {
     await pumpShot(t, const SettingsTab(), 'settings');
   });
+
+  for (final tab in [0, 1]) {
+    testWidgets('Kế hoạch cưới tab $tab', (t) async {
+      Get.testMode = true;
+      await pumpShot(
+        t,
+        Builder(
+          builder: (ctx) {
+            Get.routing.args = {'id': 'e1', 'tab': tab};
+            return const PlanScreen();
+          },
+        ),
+        'plan_$tab',
+        settleMs: 2000,
+      );
+    });
+  }
 
   testWidgets('Biểu đồ xu hướng + donut', (t) async {
     await pumpShot(

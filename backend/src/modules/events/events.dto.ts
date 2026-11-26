@@ -1,12 +1,15 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   IsIn,
+  IsInt,
   IsISO8601,
   IsOptional,
   IsString,
   IsUUID,
   Matches,
+  Max,
   MaxLength,
+  Min,
   MinLength,
 } from 'class-validator';
 
@@ -36,6 +39,13 @@ export class CreateEventDto {
   @IsOptional()
   @IsIn(EVENT_STATUSES)
   status?: string;
+
+  @ApiPropertyOptional({ description: 'Tổng ngân sách dự kiến của kế hoạch (VND); null = chưa đặt' })
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  @Max(2_000_000_000)
+  budget_vnd?: number | null;
 }
 
 /** PUT /v1/events/:id (upsert idempotent cho đồng bộ local-first). */
@@ -52,4 +62,5 @@ export class PatchEventDto {
   @IsOptional() @Matches(/^\d{4}-\d{2}-\d{2}$/) event_date?: string;
   @IsOptional() @IsString() @MaxLength(300) location?: string | null;
   @IsOptional() @IsIn(EVENT_STATUSES) status?: string;
+  @IsOptional() @IsInt() @Min(0) @Max(2_000_000_000) budget_vnd?: number | null;
 }

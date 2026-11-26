@@ -11,6 +11,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'configs/pref_const.dart';
 import 'controller/event_controller.dart';
 import 'controller/gift_list_controller.dart';
+import 'controller/plan_controller.dart';
 import 'controller/gift_controller.dart';
 import 'controller/recording_controller.dart';
 import 'controller/settings_controller.dart';
@@ -18,6 +19,7 @@ import 'presentation/screen_shell/shell_screen.dart';
 import 'repository/event_repository.dart';
 import 'repository/gift_repository.dart';
 import 'repository/outbox_repository.dart';
+import 'repository/plan_repository.dart';
 import 'services/application/api_client.dart';
 import 'services/application/google_auth_service.dart';
 import 'services/application/sync_service.dart';
@@ -75,10 +77,11 @@ Future<void> _setupDependencies() async {
   final outbox = Get.put(OutboxRepository(), permanent: true);
   final events = Get.put(EventRepository(outbox), permanent: true);
   final gifts = Get.put(GiftRepository(outbox), permanent: true);
+  final plan = Get.put(PlanRepository(outbox), permanent: true);
 
   final settings = await Get.put(SettingsController(), permanent: true).init();
   final sync = await Get.put(
-    SyncService(api, outbox, events, gifts),
+    SyncService(api, outbox, events, gifts, plan),
     permanent: true,
   ).init();
   final eventC = Get.put(
@@ -94,6 +97,7 @@ Future<void> _setupDependencies() async {
     GiftListController(gifts, giftC, eventC, sync),
     permanent: true,
   );
+  Get.put(PlanController(plan, eventC, sync), permanent: true);
   Get.put(GoogleAuthService(api, settings, sync), permanent: true);
   Get.put(ShellController(), permanent: true);
 }

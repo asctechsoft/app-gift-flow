@@ -84,6 +84,15 @@ class EventController extends GetxController {
     return e;
   }
 
+  /// Đặt / xoá (null) tổng ngân sách dự kiến của kế hoạch.
+  Future<void> setBudget(String eventId, int? budget) async {
+    final e = events.firstWhereOrNull((x) => x.id == eventId);
+    if (e == null) return;
+    await _repo.save(e.copyWith(budgetVnd: budget));
+    _sync.schedule();
+    await load();
+  }
+
   Future<void> setClosed(GiftEvent e, bool closed) async {
     await _repo.save(e.copyWith(status: closed ? 'closed' : 'active'));
     _sync.schedule();

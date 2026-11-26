@@ -15,6 +15,7 @@ import '../../values/route_name.dart';
 import '../common_components/components.dart';
 import '../common_components/ui_kit.dart';
 import '../screen_gifts/quick_entry_sheet.dart';
+import '../screen_plan/plan_entry_card.dart';
 import '../screen_shell/shell_screen.dart';
 
 /// S04 - Trang chủ: sự kiện đang chọn, tổng tiền, thống kê nhanh, thao tác nhanh.
@@ -144,6 +145,8 @@ class HomeTab extends StatelessWidget {
                   _kpis(gifts),
                   const SizedBox(height: 14),
                   _quickStats(gifts, ev.id),
+                  const SizedBox(height: 14),
+                  PlanEntryCard(eventId: ev.id),
                 ],
               );
             }),
