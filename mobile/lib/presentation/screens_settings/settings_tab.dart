@@ -66,7 +66,9 @@ class SettingsTab extends StatelessWidget {
           const SizedBox(height: 14),
           Obx(
             () => _Tile(
-              icon: s.isSignedIn ? Icons.verified_user_rounded : Icons.person_outline_rounded,
+              icon: s.isSignedIn
+                  ? Icons.verified_user_rounded
+                  : Icons.person_outline_rounded,
               title: 'set_profile'.tr,
               subtitle: s.isSignedIn ? s.accountEmail.value : 'login_google'.tr,
               onTap: () => Get.toNamed(RouteName.profile),
@@ -117,39 +119,40 @@ class _Tile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.only(bottom: 10),
-    child: SoftCard(
-      onTap: onTap,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      child: Row(
-        children: [
-          Icon(icon, color: AppColors.primary),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w700,
-                    fontSize: 15,
-                  ),
-                ),
-                if (subtitle != null)
-                  Text(
-                    subtitle!,
-                    style: const TextStyle(
-                      color: AppColors.textSecondary,
-                      fontSize: 13,
+        padding: const EdgeInsets.only(bottom: 10),
+        child: SoftCard(
+          onTap: onTap,
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          child: Row(
+            children: [
+              Icon(icon, color: AppColors.primary),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 15,
+                      ),
                     ),
-                  ),
-              ],
-            ),
+                    if (subtitle != null)
+                      Text(
+                        subtitle!,
+                        style: const TextStyle(
+                          color: AppColors.textSecondary,
+                          fontSize: 13,
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+              const Icon(Icons.chevron_right_rounded,
+                  color: AppColors.textSecondary),
+            ],
           ),
-          const Icon(Icons.chevron_right_rounded, color: AppColors.textSecondary),
-        ],
-      ),
-    ),
-  );
+        ),
+      );
 }

@@ -10,6 +10,7 @@ import 'package:uuid/uuid.dart';
 
 import '../../configs/app_config.dart';
 import '../../configs/pref_const.dart';
+import '../../models/data_models/parsed_gift.dart';
 
 /// Lỗi API thống nhất với backend: `{code, message, request_id, details?}`.
 class ApiException implements Exception {
@@ -32,46 +33,6 @@ class NetworkException implements Exception {
   final String message;
   @override
   String toString() => 'NetworkException($message)';
-}
-
-class VoiceSegmentResult {
-  VoiceSegmentResult({
-    required this.requestId,
-    required this.state,
-    this.transcript,
-    this.guestName,
-    this.relationship,
-    this.amountVnd,
-    this.warnings = const [],
-    this.duplicateGiftIds = const [],
-  });
-
-  final String requestId;
-
-  /// confirmed | pending_review | failed
-  final String state;
-  final String? transcript;
-  final String? guestName;
-  final String? relationship;
-  final int? amountVnd;
-  final List<String> warnings;
-  final List<String> duplicateGiftIds;
-
-  factory VoiceSegmentResult.fromJson(Map<String, dynamic> j) {
-    final c = (j['candidate'] as Map?)?.cast<String, dynamic>() ?? {};
-    return VoiceSegmentResult(
-      requestId: j['request_id'] as String? ?? '',
-      state: j['state'] as String? ?? 'failed',
-      transcript: j['transcript'] as String?,
-      guestName: c['guest_name'] as String?,
-      relationship: c['relationship_label'] as String?,
-      amountVnd: (c['amount_vnd'] as num?)?.toInt(),
-      warnings: ((j['warnings'] as List?) ?? const []).cast<String>(),
-      duplicateGiftIds: ((j['duplicate_candidates'] as List?) ?? const [])
-          .map((e) => (e as Map)['gift_id'] as String)
-          .toList(),
-    );
-  }
 }
 
 /// HTTP client tới backend GiftFlow. Quản lý guest-auth + refresh token,
@@ -303,44 +264,18 @@ class ApiClient {
     query: {'limit': '$limit', 'include_deleted': 'true', 'cursor': ?cursor},
   );
 
-  /// Upload 1 lượt nói. `requestId` bắt buộc để backend idempotent (BR07).
-  Future<VoiceSegmentResult> uploadVoiceSegment({
-    String? filePath,
-    String? transcriptText,
+  /// Phân tích văn bản đã nhận dạng trên máy (chỉ phân tích, chưa lưu).
+  /// `requestId` = id bản ghi: gửi lại cùng id không gọi AI/không trừ quota lần 2.
+  Future<ParsedGift> parseGift({
     required String eventId,
     required String requestId,
-    required int durationMs,
-    String side = 'mine',
-    bool retried = false,
+    required String text,
   }) async {
-    await ensureAuth();
-    final req = http.MultipartRequest('POST', _uri('/v1/voice/segments'))
-      ..headers.addAll({
-        'accept': 'application/json',
-        'x-correlation-id': _uuid.v4(),
-        if (_access != null) 'authorization': 'Bearer $_access',
-      })
-      ..fields['event_id'] = eventId
-      ..fields['request_id'] = requestId
-      ..fields['duration_ms'] = '$durationMs'
-      ..fields['side'] = side
-      ..fields.addAll({if (transcriptText != null) 'transcript_text': transcriptText});
-    if (filePath != null && filePath.isNotEmpty) {
-      req.files.add(await http.MultipartFile.fromPath('audio', filePath));
-    }
-    final res = await _exec(req, AppConfig.voiceTimeout);
-    if (res.statusCode == 401 && !retried) {
-      await _reauth();
-      return uploadVoiceSegment(
-        filePath: filePath,
-        transcriptText: transcriptText,
-        eventId: eventId,
-        requestId: requestId,
-        durationMs: durationMs,
-        side: side,
-        retried: true,
-      );
-    }
-    return VoiceSegmentResult.fromJson(_decode(res));
+    final j = await _send(
+      'POST',
+      '/v1/ai/parse-gift',
+      body: {'event_id': eventId, 'request_id': requestId, 'text': text},
+    );
+    return ParsedGift.fromJson(j);
   }
 }

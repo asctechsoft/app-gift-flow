@@ -11,5 +11,6 @@ class DateFmt {
 
   static String iso(DateTime d) => DateFormat('yyyy-MM-dd').format(d);
 
-  static String dateTime(DateTime d) => DateFormat('dd/MM/yyyy HH:mm').format(d);
+  static String dateTime(DateTime d) =>
+      DateFormat('dd/MM/yyyy HH:mm').format(d);
 }

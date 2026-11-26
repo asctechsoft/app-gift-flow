@@ -143,7 +143,9 @@ export function parseVnAmount(text: string): AmountParse {
   const raw = text.trim().split(/\s+/).filter(Boolean);
   const toks: Tok[] = [];
   raw.forEach((r, idx) => {
-    const cleaned = fold(r.replace(/^[,;.!?"'()…]+|[,;.!?"'()…]+$/g, ''));
+    const stripped = r.replace(/^[,;.!?"'()…]+|[,;.!?"'()…]+$/g, '');
+    // "củ" (tiếng lóng) = triệu. So khớp TRƯỚC khi bỏ dấu để không nhầm với "cụ" (người lớn tuổi).
+    const cleaned = stripped.normalize('NFC').toLowerCase() === 'củ' ? 'tr' : fold(stripped);
     const m = ATTACHED_RE.exec(cleaned);
     if (m) {
       toks.push({ raw: r, f: m[1], idx });

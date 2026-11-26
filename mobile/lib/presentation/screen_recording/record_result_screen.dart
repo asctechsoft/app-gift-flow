@@ -22,7 +22,8 @@ class RecordResultScreen extends StatelessWidget {
     }
     showReviewSheet(
       g,
-      onConfirm: (n, a, r) => c.confirmItem(g, name: n, amount: a, relationship: r),
+      onConfirm: (n, a, r) =>
+          c.confirmItem(g, name: n, amount: a, relationship: r),
       onDelete: () => c.undoItem(g),
       onRetry: c.canRetry(g) ? () => c.retry(g) : null,
     );
@@ -161,16 +162,18 @@ class RecordResultScreen extends StatelessWidget {
   }
 
   Widget _line(IconData i, String label, String value, Color color) => Padding(
-    padding: const EdgeInsets.symmetric(vertical: 8),
-    child: Row(
-      children: [
-        Icon(i, color: color),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Text(label, style: const TextStyle(fontWeight: FontWeight.w600)),
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: Row(
+          children: [
+            Icon(i, color: color),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(label,
+                  style: const TextStyle(fontWeight: FontWeight.w600)),
+            ),
+            Text(value,
+                style: TextStyle(fontWeight: FontWeight.w800, color: color)),
+          ],
         ),
-        Text(value, style: TextStyle(fontWeight: FontWeight.w800, color: color)),
-      ],
-    ),
-  );
+      );
 }

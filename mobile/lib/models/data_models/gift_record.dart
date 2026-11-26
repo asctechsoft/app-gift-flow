@@ -23,8 +23,8 @@ class GiftRecord {
     DateTime? updatedAt,
     this.deletedAt,
     this.synced = false,
-  }) : createdAt = createdAt ?? DateTime.now(),
-       updatedAt = updatedAt ?? DateTime.now();
+  })  : createdAt = createdAt ?? DateTime.now(),
+        updatedAt = updatedAt ?? DateTime.now();
 
   final String id;
   final String eventId;
@@ -60,53 +60,54 @@ class GiftRecord {
     DateTime? updatedAt,
     Object? deletedAt = _keep,
     bool? synced,
-  }) => GiftRecord(
-    id: id,
-    eventId: eventId,
-    guestName: guestName ?? this.guestName,
-    relationship: identical(relationship, _keep)
-        ? this.relationship
-        : relationship as String?,
-    amountVnd: amountVnd ?? this.amountVnd,
-    note: identical(note, _keep) ? this.note : note as String?,
-    status: status ?? this.status,
-    side: side ?? this.side,
-    source: source,
-    transcript: transcript ?? this.transcript,
-    warnings: warnings ?? this.warnings,
-    errorMessage: identical(errorMessage, _keep)
-        ? this.errorMessage
-        : errorMessage as String?,
-    createdAt: createdAt,
-    updatedAt: updatedAt ?? DateTime.now(),
-    deletedAt: identical(deletedAt, _keep)
-        ? this.deletedAt
-        : deletedAt as DateTime?,
-    synced: synced ?? false,
-  );
+  }) =>
+      GiftRecord(
+        id: id,
+        eventId: eventId,
+        guestName: guestName ?? this.guestName,
+        relationship: identical(relationship, _keep)
+            ? this.relationship
+            : relationship as String?,
+        amountVnd: amountVnd ?? this.amountVnd,
+        note: identical(note, _keep) ? this.note : note as String?,
+        status: status ?? this.status,
+        side: side ?? this.side,
+        source: source,
+        transcript: transcript ?? this.transcript,
+        warnings: warnings ?? this.warnings,
+        errorMessage: identical(errorMessage, _keep)
+            ? this.errorMessage
+            : errorMessage as String?,
+        createdAt: createdAt,
+        updatedAt: updatedAt ?? DateTime.now(),
+        deletedAt: identical(deletedAt, _keep)
+            ? this.deletedAt
+            : deletedAt as DateTime?,
+        synced: synced ?? false,
+      );
 
   Map<String, Object?> toMap() => {
-    'id': id,
-    'event_id': eventId,
-    'guest_name': guestName,
-    'relationship': relationship,
-    'amount_vnd': amountVnd,
-    'note': note,
-    'status': status.wire,
-    'side': side,
-    'source': source.wire,
-    'transcript': transcript,
-    'warnings': jsonEncode(warnings),
-    'error_message': errorMessage,
-    'created_at': createdAt.millisecondsSinceEpoch,
-    'updated_at': updatedAt.millisecondsSinceEpoch,
-    'deleted_at': deletedAt?.millisecondsSinceEpoch,
-    'synced': synced ? 1 : 0,
-    // Cột tìm kiếm không dấu (BR: search chuẩn hoá Unicode tiếng Việt).
-    'search_key': TextUtils.fold(
-      '$guestName ${relationship ?? ''} ${note ?? ''}',
-    ),
-  };
+        'id': id,
+        'event_id': eventId,
+        'guest_name': guestName,
+        'relationship': relationship,
+        'amount_vnd': amountVnd,
+        'note': note,
+        'status': status.wire,
+        'side': side,
+        'source': source.wire,
+        'transcript': transcript,
+        'warnings': jsonEncode(warnings),
+        'error_message': errorMessage,
+        'created_at': createdAt.millisecondsSinceEpoch,
+        'updated_at': updatedAt.millisecondsSinceEpoch,
+        'deleted_at': deletedAt?.millisecondsSinceEpoch,
+        'synced': synced ? 1 : 0,
+        // Cột tìm kiếm không dấu (BR: search chuẩn hoá Unicode tiếng Việt).
+        'search_key': TextUtils.fold(
+          '$guestName ${relationship ?? ''} ${note ?? ''}',
+        ),
+      };
 
   factory GiftRecord.fromMap(Map<String, Object?> m) {
     List<String> warns = const [];
@@ -140,18 +141,18 @@ class GiftRecord {
 
   /// Body gửi lên backend (`PUT /v1/gifts/:id`).
   Map<String, Object?> toApi() => {
-    'event_id': eventId,
-    'guest_name': guestName,
-    'relationship_label': relationship,
-    'amount_vnd': amountVnd,
-    'note': note,
-    'status': status.wire,
-    'side': side,
-    'source': source.wire,
-    'transcript': transcript,
-    'updated_at': updatedAt.toUtc().toIso8601String(),
-    'created_at': createdAt.toUtc().toIso8601String(),
-  };
+        'event_id': eventId,
+        'guest_name': guestName,
+        'relationship_label': relationship,
+        'amount_vnd': amountVnd,
+        'note': note,
+        'status': status.wire,
+        'side': side,
+        'source': source.wire,
+        'transcript': transcript,
+        'updated_at': updatedAt.toUtc().toIso8601String(),
+        'created_at': createdAt.toUtc().toIso8601String(),
+      };
 }
 
 const Object _keep = Object();

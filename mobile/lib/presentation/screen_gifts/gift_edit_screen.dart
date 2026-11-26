@@ -51,9 +51,8 @@ class _GiftEditScreenState extends State<GiftEditScreen> {
       if (g != null) {
         _gift = g;
         _name.text = g.guestName;
-        _amount.text = g.amountVnd > 0
-            ? Money.format(g.amountVnd, symbol: false)
-            : '';
+        _amount.text =
+            g.amountVnd > 0 ? Money.format(g.amountVnd, symbol: false) : '';
         _rel.text = g.relationship ?? '';
         _note.text = g.note ?? '';
         _side = g.side;
@@ -162,7 +161,8 @@ class _GiftEditScreenState extends State<GiftEditScreen> {
                     FieldLabel('field_side'.tr),
                     SideSelector(
                       value: _side,
-                      onChanged: (v) => setState(() => _side = v ?? GiftSide.mine),
+                      onChanged: (v) =>
+                          setState(() => _side = v ?? GiftSide.mine),
                     ),
                     FieldLabel('field_guest'.tr),
                     IconField(

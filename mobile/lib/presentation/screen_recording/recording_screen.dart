@@ -50,160 +50,174 @@ class _RecordingScreenState extends State<RecordingScreen> {
     }
     showReviewSheet(
       g,
-      onConfirm: (n, a, r) => c.confirmItem(g, name: n, amount: a, relationship: r),
+      onConfirm: (n, a, r) =>
+          c.confirmItem(g, name: n, amount: a, relationship: r),
       onDelete: () => c.undoItem(g),
       onRetry: c.canRetry(g) ? () => c.retry(g) : null,
     );
   }
 
   @override
+  void dispose() {
+    c.abort(); // rời màn hình: tắt mic ngay
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) => PopScope(
-    canPop: false,
-    onPopInvokedWithResult: (didPop, _) {
-      if (!didPop) _close();
-    },
-    child: GradientScaffold(
-      body: SafeArea(
-        child: Obx(() {
-          final st = c.state.value;
-          if (st == RecState.denied) return _denied();
-          if (st == RecState.error && c.event == null) return _noEvent();
-          return Column(
-            children: [
-              _topBar(),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
-                child: Obx(
-                  () => SideSelector(
-                    value: c.side.value,
-                    dense: true,
-                    onChanged: (v) => c.side.value = v ?? GiftSide.mine,
+        canPop: false,
+        onPopInvokedWithResult: (didPop, _) {
+          if (!didPop) _close();
+        },
+        child: GradientScaffold(
+          body: SafeArea(
+            child: Obx(() {
+              final st = c.state.value;
+              if (st == RecState.denied) return _denied();
+              if (st == RecState.error && c.event == null) return _noEvent();
+              return Column(
+                children: [
+                  _topBar(),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
+                    child: Obx(
+                      () => SideSelector(
+                        value: c.side.value,
+                        dense: true,
+                        onChanged: (v) => c.side.value = v ?? GiftSide.mine,
+                      ),
+                    ),
                   ),
-                ),
-              ),
-              Obx(() {
-                final b = c.banner.value;
-                if (b == null) return const SizedBox.shrink();
-                return Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
-                  child: ErrorBanner(message: b),
-                );
-              }),
-              Expanded(child: _list()),
-              Obx(() {
-                final info = c.sttInfo.value;
-                if (info.isEmpty) return const SizedBox.shrink();
-                return Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 6),
-                  child: Text(
-                    info,
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(fontSize: 11.5, color: AppColors.textSecondary),
-                  ),
-                );
-              }),
-              Obx(() {
-                final t = c.liveText.value;
-                if (t.isEmpty) return const SizedBox.shrink();
-                return Container(
-                  width: double.infinity,
-                  margin: const EdgeInsets.fromLTRB(20, 0, 20, 10),
-                  padding: const EdgeInsets.all(14),
-                  decoration: BoxDecoration(
-                    color: AppColors.chip,
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Text(
-                    t,
-                    style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w600, height: 1.35),
-                  ),
-                );
-              }),
-              _controls(st),
-            ],
-          );
-        }),
-      ),
-    ),
-  );
-
-  Widget _topBar() => Padding(
-    padding: const EdgeInsets.fromLTRB(8, 4, 16, 8),
-    child: Row(
-      children: [
-        IconButton(
-          tooltip: 'close'.tr,
-          onPressed: _close,
-          icon: const Icon(Icons.close_rounded),
-        ),
-        Expanded(
-          child: Column(
-            children: [
-              Text(
-                'rec_title'.tr,
-                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
-              ),
-              if (c.event != null)
-                Text(
-                  c.event!.name,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontSize: 13,
-                    color: AppColors.textSecondary,
-                  ),
-                ),
-            ],
-          ),
-        ),
-        const SizedBox(width: 48),
-      ],
-    ),
-  );
-
-  Widget _list() => Obx(() {
-    final items = c.items.toList();
-    if (items.isEmpty) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 36),
-          child: Text(
-            'rec_empty'.tr,
-            textAlign: TextAlign.center,
-            style: const TextStyle(color: AppColors.textSecondary, height: 1.4),
+                  Obx(() {
+                    final b = c.banner.value;
+                    if (b == null) return const SizedBox.shrink();
+                    return Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
+                      child: ErrorBanner(message: b),
+                    );
+                  }),
+                  Expanded(child: _list()),
+                  Obx(() {
+                    final info = c.sttInfo.value;
+                    if (info.isEmpty) return const SizedBox.shrink();
+                    return Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 0, 20, 6),
+                      child: Text(
+                        info,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                            fontSize: 11.5, color: AppColors.textSecondary),
+                      ),
+                    );
+                  }),
+                  Obx(() {
+                    final t = c.liveText.value;
+                    if (t.isEmpty) return const SizedBox.shrink();
+                    return Container(
+                      width: double.infinity,
+                      margin: const EdgeInsets.fromLTRB(20, 0, 20, 10),
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: AppColors.chip,
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Text(
+                        t,
+                        style: const TextStyle(
+                            fontSize: 17,
+                            fontWeight: FontWeight.w600,
+                            height: 1.35),
+                      ),
+                    );
+                  }),
+                  _controls(st),
+                ],
+              );
+            }),
           ),
         ),
       );
-    }
-    return ListView.separated(
-      padding: const EdgeInsets.fromLTRB(20, 4, 20, 12),
-      itemCount: items.length,
-      separatorBuilder: (_, _) => const SizedBox(height: 10),
-      itemBuilder: (_, i) {
-        final g = items[i];
-        final undo = g.status == GiftStatus.confirmed;
-        return GiftRow(
-          gift: g,
-          showSync: false,
-          showTranscript: true,
-          onTap: () => _review(g),
-          trailing: undo
-              ? IconButton(
-                  tooltip: 'undo'.tr,
-                  onPressed: () => c.undoItem(g),
-                  icon: const Icon(
-                    Icons.undo_rounded,
-                    color: AppColors.textSecondary,
-                    size: 20,
+
+  Widget _topBar() => Padding(
+        padding: const EdgeInsets.fromLTRB(8, 4, 16, 8),
+        child: Row(
+          children: [
+            IconButton(
+              tooltip: 'close'.tr,
+              onPressed: _close,
+              icon: const Icon(Icons.close_rounded),
+            ),
+            Expanded(
+              child: Column(
+                children: [
+                  Text(
+                    'rec_title'.tr,
+                    style: const TextStyle(
+                        fontSize: 18, fontWeight: FontWeight.w800),
                   ),
-                )
-              : (g.status == GiftStatus.failed || g.status == GiftStatus.pendingReview)
-              ? const Icon(Icons.chevron_right_rounded)
-              : null,
+                  if (c.event != null)
+                    Text(
+                      c.event!.name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 13,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 48),
+          ],
+        ),
+      );
+
+  Widget _list() => Obx(() {
+        final items = c.items.toList();
+        if (items.isEmpty) {
+          return Center(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 36),
+              child: Text(
+                'rec_empty'.tr,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                    color: AppColors.textSecondary, height: 1.4),
+              ),
+            ),
+          );
+        }
+        return ListView.separated(
+          padding: const EdgeInsets.fromLTRB(20, 4, 20, 12),
+          itemCount: items.length,
+          separatorBuilder: (_, _) => const SizedBox(height: 10),
+          itemBuilder: (_, i) {
+            final g = items[i];
+            final undo = g.status == GiftStatus.confirmed;
+            return GiftRow(
+              gift: g,
+              showSync: false,
+              showTranscript: true,
+              onTap: () => _review(g),
+              trailing: undo
+                  ? IconButton(
+                      tooltip: 'undo'.tr,
+                      onPressed: () => c.undoItem(g),
+                      icon: const Icon(
+                        Icons.undo_rounded,
+                        color: AppColors.textSecondary,
+                        size: 20,
+                      ),
+                    )
+                  : (g.status == GiftStatus.failed ||
+                          g.status == GiftStatus.pendingReview)
+                      ? const Icon(Icons.chevron_right_rounded)
+                      : null,
+            );
+          },
         );
-      },
-    );
-  });
+      });
 
   Widget _controls(RecState st) {
     final listening = st == RecState.listening;
@@ -226,22 +240,26 @@ class _RecordingScreenState extends State<RecordingScreen> {
         children: [
           Obx(() {
             final n = c.processingCount;
+            final idle = st == RecState.idle && c.processingCount == 0;
             final txt = busy
-                ? (st == RecState.stopping ? 'rec_finishing'.tr : 'rec_starting'.tr)
-                : listening
-                ? (c.speaking.value ? 'rec_hearing'.tr : 'rec_listening'.tr)
-                : 'rec_paused'.tr;
+                ? (st == RecState.stopping
+                    ? 'rec_finishing'.tr
+                    : 'rec_starting'.tr)
+                : c.statusKey.tr;
             return Column(
               children: [
                 Text(
                   txt,
-                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+                  style: const TextStyle(
+                      fontSize: 18, fontWeight: FontWeight.w800),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   n > 0
                       ? 'rec_processing'.trParams({'args1': '$n'})
-                      : 'rec_hint'.tr,
+                      : (idle && c.items.isNotEmpty
+                          ? 'rec_tap_mic'.tr
+                          : 'rec_hint'.tr),
                   textAlign: TextAlign.center,
                   style: const TextStyle(
                     color: AppColors.textSecondary,
@@ -262,7 +280,7 @@ class _RecordingScreenState extends State<RecordingScreen> {
                   button: true,
                   label: 'rec_cut'.tr,
                   child: GestureDetector(
-                    onTap: listening ? c.cutSegment : null,
+                    onTap: busy ? null : c.cutSegment,
                     child: SizedBox(
                       width: 128,
                       height: 128,
@@ -286,7 +304,8 @@ class _RecordingScreenState extends State<RecordingScreen> {
                               gradient: AppColors.primaryGradient,
                               boxShadow: [
                                 BoxShadow(
-                                  color: AppColors.primary.withValues(alpha: 0.4),
+                                  color:
+                                      AppColors.primary.withValues(alpha: 0.4),
                                   blurRadius: 20,
                                   offset: const Offset(0, 8),
                                 ),
@@ -368,55 +387,55 @@ class _RecordingScreenState extends State<RecordingScreen> {
 
   /// X04 - từ chối quyền micro.
   Widget _denied() => Column(
-    children: [
-      _topBar(),
-      Expanded(
-        child: EmptyState(
-          icon: Icons.mic_off_rounded,
-          title: 'mic_denied_title'.tr,
-          message: 'mic_denied_msg'.tr,
-          actionLabel: 'open_settings'.tr,
-          onAction: c.openAppSettingsForMic,
-        ),
-      ),
-      Padding(
-        padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
-        child: Column(
-          children: [
-            SecondaryButton(
-              label: 'try_again'.tr,
-              icon: Icons.refresh_rounded,
-              onPressed: c.start,
+        children: [
+          _topBar(),
+          Expanded(
+            child: EmptyState(
+              icon: Icons.mic_off_rounded,
+              title: 'mic_denied_title'.tr,
+              message: 'mic_denied_msg'.tr,
+              actionLabel: 'open_settings'.tr,
+              onAction: c.openAppSettingsForMic,
             ),
-            const SizedBox(height: 10),
-            SecondaryButton(
-              label: 'add_manual'.tr,
-              icon: Icons.edit_outlined,
-              onPressed: () {
-                Get.back();
-                Get.toNamed(RouteName.giftEdit);
-              },
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+            child: Column(
+              children: [
+                SecondaryButton(
+                  label: 'try_again'.tr,
+                  icon: Icons.refresh_rounded,
+                  onPressed: c.start,
+                ),
+                const SizedBox(height: 10),
+                SecondaryButton(
+                  label: 'add_manual'.tr,
+                  icon: Icons.edit_outlined,
+                  onPressed: () {
+                    Get.back();
+                    Get.toNamed(RouteName.giftEdit);
+                  },
+                ),
+              ],
             ),
-          ],
-        ),
-      ),
-    ],
-  );
+          ),
+        ],
+      );
 
   Widget _noEvent() => Column(
-    children: [
-      _topBar(),
-      Expanded(
-        child: EmptyState(
-          icon: Icons.event_busy_rounded,
-          title: 'need_event_first'.tr,
-          actionLabel: 'event_create'.tr,
-          onAction: () {
-            Get.back();
-            Get.toNamed(RouteName.eventEdit);
-          },
-        ),
-      ),
-    ],
-  );
+        children: [
+          _topBar(),
+          Expanded(
+            child: EmptyState(
+              icon: Icons.event_busy_rounded,
+              title: 'need_event_first'.tr,
+              actionLabel: 'event_create'.tr,
+              onAction: () {
+                Get.back();
+                Get.toNamed(RouteName.eventEdit);
+              },
+            ),
+          ),
+        ],
+      );
 }

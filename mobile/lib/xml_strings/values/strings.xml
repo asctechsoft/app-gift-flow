@@ -244,4 +244,17 @@
     <string name="server_check">Save &amp; test connection</string>
     <string name="server_ok">Server connected</string>
     <string name="server_fail">Cannot reach the server. Check the address, Wi-Fi and firewall.</string>
+    <string name="rec_status_ready">Ready</string>
+    <string name="rec_status_listening">Listening</string>
+    <string name="rec_status_processing">AI processing</string>
+    <string name="rec_status_saved">Saved</string>
+    <string name="rec_status_review">Needs review</string>
+    <string name="rec_status_error">Error</string>
+    <string name="rec_tap_mic">Tap the mic for the next envelope</string>
+    <string name="rec_err_no_service">This device has no speech recognition service. Install or enable Google speech services, or enter manually.</string>
+    <string name="rec_err_no_vi">This device does not support Vietnamese speech recognition. Download the Vietnamese pack in speech settings, or enter manually.</string>
+    <string name="rec_err_listen">Could not start the microphone. Tap the mic to retry.</string>
+    <string name="rec_err_network_stt">Speech recognition needs internet. Check your connection and tap the mic to retry.</string>
+    <string name="rec_opt_autosave">Auto-save when clear</string>
+    <string name="rec_opt_autosave_note">When off, every envelope waits for your confirmation before counting toward the total.</string>
 </resources>

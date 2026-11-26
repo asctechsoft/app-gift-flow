@@ -21,7 +21,8 @@ class EnvelopeScanner {
     if (shot == null) return null;
     final recognizer = TextRecognizer(script: TextRecognitionScript.latin);
     try {
-      final text = await recognizer.processImage(InputImage.fromFilePath(shot.path));
+      final text =
+          await recognizer.processImage(InputImage.fromFilePath(shot.path));
       return parse(text.text);
     } finally {
       await recognizer.close();
@@ -60,7 +61,9 @@ class EnvelopeScanner {
       }
     }
     // dòng chỉ gồm số/ký hiệu không phải tên
-    final names = lines.where((l) => RegExp(r'\p{L}', unicode: true).hasMatch(l)).toList();
+    final names = lines
+        .where((l) => RegExp(r'\p{L}', unicode: true).hasMatch(l))
+        .toList();
     return ScanResult(lines: names, amountVnd: amount);
   }
 }

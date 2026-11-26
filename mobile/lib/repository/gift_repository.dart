@@ -53,13 +53,13 @@ class EventStats {
   final List<GuestStat> topGuests;
 
   static EventStats empty() => EventStats(
-    totalVnd: 0,
-    envelopes: 0,
-    guests: 0,
-    pendingCount: 0,
-    pendingVnd: 0,
-    byRelationship: const [],
-  );
+        totalVnd: 0,
+        envelopes: 0,
+        guests: 0,
+        pendingCount: 0,
+        pendingVnd: 0,
+        byRelationship: const [],
+      );
 }
 
 class GiftRepository {
@@ -273,7 +273,8 @@ class GiftRepository {
     );
     return EventStats(
       topGuests: top
-          .map((r) => GuestStat(r['n'] as String, (r['s'] as int?) ?? 0, r['c'] as int))
+          .map((r) =>
+              GuestStat(r['n'] as String, (r['s'] as int?) ?? 0, r['c'] as int))
           .toList(),
       bySide: sides
           .map(
@@ -313,8 +314,7 @@ class GiftRepository {
         .millisecondsSinceEpoch;
     final rows = await (await _db).query(
       'gifts',
-      where:
-          'event_id = ? AND deleted_at IS NULL AND amount_vnd = ? '
+      where: 'event_id = ? AND deleted_at IS NULL AND amount_vnd = ? '
           'AND created_at >= ? AND status IN (\'confirmed\',\'pending_review\')'
           '${excludeId != null ? ' AND id != ?' : ''}',
       whereArgs: [

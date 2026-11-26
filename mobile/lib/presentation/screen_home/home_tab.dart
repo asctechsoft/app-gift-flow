@@ -52,7 +52,8 @@ class HomeTab extends StatelessWidget {
                 ),
                 const SizedBox(width: 6),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
                   decoration: BoxDecoration(
                     gradient: AppColors.primaryGradient,
                     borderRadius: BorderRadius.circular(6),
@@ -95,7 +96,8 @@ class HomeTab extends StatelessWidget {
                 name.isEmpty
                     ? 'home_hello_anon'.tr
                     : 'home_hello'.trParams({'args1': name}),
-                style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
+                style:
+                    const TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
               );
             }),
             const SizedBox(height: 14),
@@ -103,7 +105,11 @@ class HomeTab extends StatelessWidget {
               if (!sync.online.value) {
                 return Padding(
                   padding: const EdgeInsets.only(bottom: 12),
-                  child: ErrorBanner(message: sync.serverUnreachable.value ? 'server_unreachable'.tr : 'offline_badge'.tr, warning: true),
+                  child: ErrorBanner(
+                      message: sync.serverUnreachable.value
+                          ? 'server_unreachable'.tr
+                          : 'offline_badge'.tr,
+                      warning: true),
                 );
               }
               return const SizedBox.shrink();
@@ -173,7 +179,8 @@ class HomeTab extends StatelessWidget {
                           const SizedBox(height: 10),
                           InkWell(
                             onTap: () {
-                              gifts.statusFilter.value = GiftStatus.pendingReview;
+                              gifts.statusFilter.value =
+                                  GiftStatus.pendingReview;
                               shell.go(2);
                             },
                             child: StatusPill(
@@ -213,7 +220,8 @@ class HomeTab extends StatelessWidget {
                     SoftCard(
                       child: Row(
                         children: [
-                          const Icon(Icons.mic_rounded, color: AppColors.primary),
+                          const Icon(Icons.mic_rounded,
+                              color: AppColors.primary),
                           const SizedBox(width: 12),
                           Expanded(child: Text('home_empty_cta'.tr)),
                         ],
@@ -273,24 +281,25 @@ class _Shortcut extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Expanded(
-    child: Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 4),
-      child: SoftCard(
-        onTap: onTap,
-        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 4),
-        child: Column(
-          children: [
-            Icon(icon, color: AppColors.primary, size: 28),
-            const SizedBox(height: 6),
-            Text(
-              label,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 4),
+          child: SoftCard(
+            onTap: onTap,
+            padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 4),
+            child: Column(
+              children: [
+                Icon(icon, color: AppColors.primary, size: 28),
+                const SizedBox(height: 6),
+                Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                      fontSize: 12.5, fontWeight: FontWeight.w600),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
-      ),
-    ),
-  );
+      );
 }

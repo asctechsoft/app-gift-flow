@@ -12,9 +12,9 @@ enum GiftStatus {
   final String wire;
 
   static GiftStatus fromWire(String? v) => GiftStatus.values.firstWhere(
-    (s) => s.wire == v,
-    orElse: () => GiftStatus.pendingReview,
-  );
+        (s) => s.wire == v,
+        orElse: () => GiftStatus.pendingReview,
+      );
 }
 
 enum GiftSource {
@@ -46,5 +46,6 @@ class GiftSide {
   static const List<String> all = [mine, parents];
 
   static String normalize(String? v) => all.contains(v) ? v! : mine;
-  static String labelKey(String side) => side == parents ? 'side_parents' : 'side_mine';
+  static String labelKey(String side) =>
+      side == parents ? 'side_parents' : 'side_mine';
 }

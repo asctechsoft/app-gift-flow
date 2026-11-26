@@ -66,9 +66,7 @@ class EventController extends GetxController {
         location: loc.isEmpty ? null : loc,
       );
     } else {
-      e = events
-          .firstWhere((x) => x.id == id)
-          .copyWith(
+      e = events.firstWhere((x) => x.id == id).copyWith(
             name: name.trim(),
             type: type,
             eventDate: eventDate,

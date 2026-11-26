@@ -23,8 +23,24 @@ describe('parseVnAmount', () => {
     ['2000000 đồng', 2_000_000],
     ['500 nghìn', 500_000],
     ['hai triệu năm trăm', 2_500_000],
+    ['hai củ', 2_000_000],
+    ['Anh Nam mừng hai củ', 2_000_000],
+    ['hai củ rưỡi', 2_500_000],
+    ['Ông Tuấn mừng một triệu hai', 1_200_000],
+    ['Nguyễn Văn Minh mừng hai triệu năm trăm', 2_500_000],
+    ['Cô Lan một triệu rưỡi', 1_500_000],
+    ['Bác Hùng bạn bố mừng năm triệu', 5_000_000],
   ])('"%s" -> %i', (text, expected) => {
     expect(amt(text)).toBe(expected);
+  });
+
+  it('"cụ" (người lớn tuổi) không bị coi là đơn vị tiền', () => {
+    expect(amt('Cụ Hai mừng một triệu')).toBe(1_000_000);
+    expect(amt('Cụ Tư')).toBeNull();
+  });
+
+  it('không có số tiền -> null ("Anh Long mừng...")', () => {
+    expect(parseVnAmount('Anh Long mừng').amount).toBeNull();
   });
 
   it('không đoán khi số < 1000 không rõ đơn vị ("năm trăm")', () => {

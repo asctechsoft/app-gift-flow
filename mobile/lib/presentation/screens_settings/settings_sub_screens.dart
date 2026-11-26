@@ -68,74 +68,85 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   @override
   Widget build(BuildContext context) => GradientScaffold(
-    appBar: AppHeader(title: 'set_profile'.tr),
-    body: SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(20, 4, 20, 20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Obx(
-              () => SoftCard(
-                child: s.isSignedIn
-                    ? Row(
-                        children: [
-                          const Icon(Icons.verified_user_rounded, color: AppColors.success),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text('login_signed_in'.tr, style: const TextStyle(fontWeight: FontWeight.w800)),
-                                Text(s.accountEmail.value, style: const TextStyle(color: AppColors.textSecondary)),
-                              ],
-                            ),
+        appBar: AppHeader(title: 'set_profile'.tr),
+        body: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 4, 20, 20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Obx(
+                  () => SoftCard(
+                    child: s.isSignedIn
+                        ? Row(
+                            children: [
+                              const Icon(Icons.verified_user_rounded,
+                                  color: AppColors.success),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text('login_signed_in'.tr,
+                                        style: const TextStyle(
+                                            fontWeight: FontWeight.w800)),
+                                    Text(s.accountEmail.value,
+                                        style: const TextStyle(
+                                            color: AppColors.textSecondary)),
+                                  ],
+                                ),
+                              ),
+                              TextButton(
+                                  onPressed: _signOut,
+                                  child: Text('logout'.tr)),
+                            ],
+                          )
+                        : Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('login_title'.tr,
+                                  style: const TextStyle(
+                                      fontWeight: FontWeight.w800)),
+                              const SizedBox(height: 4),
+                              Text('login_desc'.tr,
+                                  style: const TextStyle(
+                                      color: AppColors.textSecondary)),
+                              const SizedBox(height: 12),
+                              SecondaryButton(
+                                label: 'login_google'.tr,
+                                icon: Icons.login_rounded,
+                                onPressed: _busy ? null : _signIn,
+                              ),
+                            ],
                           ),
-                          TextButton(onPressed: _signOut, child: Text('logout'.tr)),
-                        ],
-                      )
-                    : Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('login_title'.tr, style: const TextStyle(fontWeight: FontWeight.w800)),
-                          const SizedBox(height: 4),
-                          Text('login_desc'.tr, style: const TextStyle(color: AppColors.textSecondary)),
-                          const SizedBox(height: 12),
-                          SecondaryButton(
-                            label: 'login_google'.tr,
-                            icon: Icons.login_rounded,
-                            onPressed: _busy ? null : _signIn,
-                          ),
-                        ],
-                      ),
-              ),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                FieldLabel('profile_name'.tr),
+                IconField(
+                  controller: _name,
+                  icon: Icons.person_outline_rounded,
+                  hint: 'profile_name_hint'.tr,
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  'profile_note'.tr,
+                  style: const TextStyle(color: AppColors.textSecondary),
+                ),
+                const Spacer(),
+                PrimaryButton(
+                  label: 'save'.tr,
+                  onPressed: () async {
+                    await s.setDisplayName(_name.text);
+                    Toast.show('saved'.tr);
+                    Get.back();
+                  },
+                ),
+              ],
             ),
-            const SizedBox(height: 8),
-            FieldLabel('profile_name'.tr),
-            IconField(
-              controller: _name,
-              icon: Icons.person_outline_rounded,
-              hint: 'profile_name_hint'.tr,
-            ),
-            const SizedBox(height: 10),
-            Text(
-              'profile_note'.tr,
-              style: const TextStyle(color: AppColors.textSecondary),
-            ),
-            const Spacer(),
-            PrimaryButton(
-              label: 'save'.tr,
-              onPressed: () async {
-                await s.setDisplayName(_name.text);
-                Toast.show('saved'.tr);
-                Get.back();
-              },
-            ),
-          ],
+          ),
         ),
-      ),
-    ),
-  );
+      );
 }
 
 /// Tùy chọn ghi âm: tự cắt phong bì khi im lặng, độ nhạy.
@@ -160,6 +171,17 @@ class RecordingOptionsScreen extends StatelessWidget {
                   title: Text('rec_opt_auto'.tr),
                   subtitle: Text('rec_opt_auto_note'.tr),
                   onChanged: s.setAutoSilenceCut,
+                ),
+              ),
+              const SizedBox(height: 12),
+              SoftCard(
+                padding: const EdgeInsets.symmetric(vertical: 4),
+                child: SwitchListTile(
+                  value: s.autoSave.value,
+                  activeThumbColor: AppColors.primary,
+                  title: Text('rec_opt_autosave'.tr),
+                  subtitle: Text('rec_opt_autosave_note'.tr),
+                  onChanged: s.setAutoSave,
                 ),
               ),
               const SizedBox(height: 12),
@@ -289,7 +311,8 @@ class _BackupScreenState extends State<BackupScreen> {
               if (!sync.online.value)
                 Padding(
                   padding: const EdgeInsets.only(bottom: 12),
-                  child: ErrorBanner(message: 'offline_badge'.tr, warning: true),
+                  child:
+                      ErrorBanner(message: 'offline_badge'.tr, warning: true),
                 ),
               if (sync.lastError.value != null)
                 Padding(
@@ -324,7 +347,8 @@ class _BackupScreenState extends State<BackupScreen> {
                       quota == null
                           ? (_meError ?? '...')
                           : 'quota_value'.trParams({
-                              'args1': '${(quota['limit'] as num) - (quota['used'] as num)}',
+                              'args1':
+                                  '${(quota['limit'] as num) - (quota['used'] as num)}',
                               'args2': '${quota['limit']}',
                             }),
                       AppColors.text,
@@ -337,15 +361,19 @@ class _BackupScreenState extends State<BackupScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('server_title'.tr, style: const TextStyle(fontWeight: FontWeight.w800)),
+                    Text('server_title'.tr,
+                        style: const TextStyle(fontWeight: FontWeight.w800)),
                     const SizedBox(height: 4),
-                    Text('server_hint'.tr, style: const TextStyle(color: AppColors.textSecondary, fontSize: 12.5)),
+                    Text('server_hint'.tr,
+                        style: const TextStyle(
+                            color: AppColors.textSecondary, fontSize: 12.5)),
                     const SizedBox(height: 8),
                     TextField(
                       controller: _urlCtl,
                       keyboardType: TextInputType.url,
                       autocorrect: false,
-                      decoration: const InputDecoration(hintText: 'http://192.168.1.10:3000'),
+                      decoration: const InputDecoration(
+                          hintText: 'http://192.168.1.10:3000'),
                     ),
                     const SizedBox(height: 8),
                     SecondaryButton(
@@ -375,7 +403,8 @@ class _BackupScreenState extends State<BackupScreen> {
               const SizedBox(height: 16),
               Text(
                 'backup_note'.tr,
-                style: const TextStyle(color: AppColors.textSecondary, fontSize: 13),
+                style: const TextStyle(
+                    color: AppColors.textSecondary, fontSize: 13),
               ),
             ],
           );
@@ -385,19 +414,19 @@ class _BackupScreenState extends State<BackupScreen> {
   }
 
   Widget _row(IconData i, String l, String v, Color c) => Row(
-    children: [
-      Icon(i, color: AppColors.primary),
-      const SizedBox(width: 12),
-      Expanded(child: Text(l)),
-      Flexible(
-        child: Text(
-          v,
-          textAlign: TextAlign.right,
-          style: TextStyle(fontWeight: FontWeight.w800, color: c),
-        ),
-      ),
-    ],
-  );
+        children: [
+          Icon(i, color: AppColors.primary),
+          const SizedBox(width: 12),
+          Expanded(child: Text(l)),
+          Flexible(
+            child: Text(
+              v,
+              textAlign: TextAlign.right,
+              style: TextStyle(fontWeight: FontWeight.w800, color: c),
+            ),
+          ),
+        ],
+      );
 }
 
 /// Giới thiệu ứng dụng + quyền riêng tư.
@@ -406,54 +435,58 @@ class AboutScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => GradientScaffold(
-    appBar: AppHeader(title: 'set_about'.tr),
-    body: SafeArea(
-      child: ListView(
-        padding: const EdgeInsets.fromLTRB(20, 4, 20, 20),
-        children: [
-          Center(child: Image.asset(AppAssets.logo, width: 96, height: 96)),
-          const SizedBox(height: 10),
-          const Center(
-            child: Text(
-              'GiftFlow AI',
-              style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800),
-            ),
-          ),
-          FutureBuilder<PackageInfo>(
-            future: PackageInfo.fromPlatform(),
-            builder: (_, snap) => Center(
-              child: Text(
-                snap.hasData ? 'v${snap.data!.version}+${snap.data!.buildNumber}' : '',
-                style: const TextStyle(color: AppColors.textSecondary),
+        appBar: AppHeader(title: 'set_about'.tr),
+        body: SafeArea(
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(20, 4, 20, 20),
+            children: [
+              Center(child: Image.asset(AppAssets.logo, width: 96, height: 96)),
+              const SizedBox(height: 10),
+              const Center(
+                child: Text(
+                  'GiftFlow AI',
+                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800),
+                ),
               ),
-            ),
-          ),
-          const SizedBox(height: 18),
-          SoftCard(child: Text('about_desc'.tr)),
-          const SizedBox(height: 12),
-          SoftCard(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'privacy_title'.tr,
-                  style: const TextStyle(fontWeight: FontWeight.w800),
+              FutureBuilder<PackageInfo>(
+                future: PackageInfo.fromPlatform(),
+                builder: (_, snap) => Center(
+                  child: Text(
+                    snap.hasData
+                        ? 'v${snap.data!.version}+${snap.data!.buildNumber}'
+                        : '',
+                    style: const TextStyle(color: AppColors.textSecondary),
+                  ),
                 ),
-                const SizedBox(height: 6),
-                Text(
-                  'privacy_body'.tr,
-                  style: const TextStyle(color: AppColors.textSecondary, height: 1.4),
+              ),
+              const SizedBox(height: 18),
+              SoftCard(child: Text('about_desc'.tr)),
+              const SizedBox(height: 12),
+              SoftCard(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'privacy_title'.tr,
+                      style: const TextStyle(fontWeight: FontWeight.w800),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      'privacy_body'.tr,
+                      style: const TextStyle(
+                          color: AppColors.textSecondary, height: 1.4),
+                    ),
+                  ],
                 ),
-              ],
-            ),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                'API: ${ApiClient.baseUrl}',
+                style: const TextStyle(
+                    color: AppColors.textSecondary, fontSize: 12),
+              ),
+            ],
           ),
-          const SizedBox(height: 12),
-          Text(
-            'API: ${ApiClient.baseUrl}',
-            style: const TextStyle(color: AppColors.textSecondary, fontSize: 12),
-          ),
-        ],
-      ),
-    ),
-  );
+        ),
+      );
 }

@@ -29,7 +29,8 @@ class GoogleAuthService extends GetxService {
 
   /// Web client ID của OAuth (không phải Android client ID):
   /// `--dart-define=GOOGLE_SERVER_CLIENT_ID=xxxx.apps.googleusercontent.com`
-  static const String serverClientId = String.fromEnvironment('GOOGLE_SERVER_CLIENT_ID');
+  static const String serverClientId =
+      String.fromEnvironment('GOOGLE_SERVER_CLIENT_ID');
 
   static bool get isConfigured => serverClientId.isNotEmpty;
 

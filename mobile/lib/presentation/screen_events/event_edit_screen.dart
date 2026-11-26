@@ -102,84 +102,86 @@ class _EventEditScreenState extends State<EventEditScreen> {
 
   @override
   Widget build(BuildContext context) => GradientScaffold(
-    appBar: _first
-        ? AppBar(title: Text('event_first_title'.tr))
-        : AppHeader(
-            title: _editing == null ? 'event_create'.tr : 'event_edit'.tr,
-          ),
-    body: SafeArea(
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
-        keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (_first)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 8),
-                child: Text(
-                  'event_first_msg'.tr,
-                  style: const TextStyle(color: AppColors.textSecondary),
-                ),
+        appBar: _first
+            ? AppBar(title: Text('event_first_title'.tr))
+            : AppHeader(
+                title: _editing == null ? 'event_create'.tr : 'event_edit'.tr,
               ),
-            FieldLabel('event_name'.tr),
-            IconField(
-              controller: _name,
-              icon: Icons.celebration_outlined,
-              hint: 'event_name_hint'.tr,
-              errorText: _nameErr,
-            ),
-            FieldLabel('event_type'.tr),
-            Wrap(
-              spacing: 8,
-              runSpacing: 4,
+        body: SafeArea(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+            keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                for (final t in _types)
-                  ChoiceChip(
-                    label: Text(t.$2.tr),
-                    selected: _type == t.$1,
-                    onSelected: (_) => setState(() => _type = t.$1),
-                    showCheckmark: false,
-                    selectedColor: AppColors.primary,
-                    backgroundColor: AppColors.chip,
-                    side: BorderSide.none,
-                    labelStyle: TextStyle(
-                      color: _type == t.$1 ? Colors.white : AppColors.primary,
-                      fontWeight: FontWeight.w700,
+                if (_first)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: Text(
+                      'event_first_msg'.tr,
+                      style: const TextStyle(color: AppColors.textSecondary),
                     ),
                   ),
+                FieldLabel('event_name'.tr),
+                IconField(
+                  controller: _name,
+                  icon: Icons.celebration_outlined,
+                  hint: 'event_name_hint'.tr,
+                  errorText: _nameErr,
+                ),
+                FieldLabel('event_type'.tr),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 4,
+                  children: [
+                    for (final t in _types)
+                      ChoiceChip(
+                        label: Text(t.$2.tr),
+                        selected: _type == t.$1,
+                        onSelected: (_) => setState(() => _type = t.$1),
+                        showCheckmark: false,
+                        selectedColor: AppColors.primary,
+                        backgroundColor: AppColors.chip,
+                        side: BorderSide.none,
+                        labelStyle: TextStyle(
+                          color:
+                              _type == t.$1 ? Colors.white : AppColors.primary,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                  ],
+                ),
+                FieldLabel('event_date'.tr),
+                SoftCard(
+                  onTap: _pickDate,
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                  child: Row(
+                    children: [
+                      const Icon(
+                        Icons.calendar_today_outlined,
+                        color: AppColors.textSecondary,
+                      ),
+                      const SizedBox(width: 12),
+                      Text(DateFmt.display(DateFmt.iso(_date))),
+                    ],
+                  ),
+                ),
+                FieldLabel('event_location'.tr),
+                IconField(
+                  controller: _loc,
+                  icon: Icons.place_outlined,
+                  hint: 'event_location_hint'.tr,
+                ),
+                const SizedBox(height: 28),
+                PrimaryButton(
+                  label: _editing == null ? 'event_create'.tr : 'save'.tr,
+                  loading: _saving,
+                  onPressed: _save,
+                ),
               ],
             ),
-            FieldLabel('event_date'.tr),
-            SoftCard(
-              onTap: _pickDate,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-              child: Row(
-                children: [
-                  const Icon(
-                    Icons.calendar_today_outlined,
-                    color: AppColors.textSecondary,
-                  ),
-                  const SizedBox(width: 12),
-                  Text(DateFmt.display(DateFmt.iso(_date))),
-                ],
-              ),
-            ),
-            FieldLabel('event_location'.tr),
-            IconField(
-              controller: _loc,
-              icon: Icons.place_outlined,
-              hint: 'event_location_hint'.tr,
-            ),
-            const SizedBox(height: 28),
-            PrimaryButton(
-              label: _editing == null ? 'event_create'.tr : 'save'.tr,
-              loading: _saving,
-              onPressed: _save,
-            ),
-          ],
+          ),
         ),
-      ),
-    ),
-  );
+      );
 }

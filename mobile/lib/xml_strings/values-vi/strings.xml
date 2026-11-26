@@ -258,4 +258,17 @@
     <string name="server_check">Lưu &amp; kiểm tra kết nối</string>
     <string name="server_ok">Kết nối máy chủ thành công</string>
     <string name="server_fail">Không kết nối được máy chủ. Kiểm tra địa chỉ, Wi-Fi và tường lửa.</string>
+    <string name="rec_status_ready">Sẵn sàng</string>
+    <string name="rec_status_listening">Đang nghe</string>
+    <string name="rec_status_processing">Đang xử lý AI</string>
+    <string name="rec_status_saved">Đã lưu</string>
+    <string name="rec_status_review">Cần kiểm tra</string>
+    <string name="rec_status_error">Lỗi</string>
+    <string name="rec_tap_mic">Chạm micro để nói phong bì tiếp theo</string>
+    <string name="rec_err_no_service">Máy chưa có dịch vụ nhận dạng giọng nói. Hãy cài hoặc bật "Dịch vụ giọng nói của Google" trong Cài đặt, hoặc nhập tay.</string>
+    <string name="rec_err_no_vi">Máy chưa hỗ trợ nhận dạng tiếng Việt. Hãy tải gói tiếng Việt trong cài đặt giọng nói của máy, hoặc nhập tay.</string>
+    <string name="rec_err_listen">Không bật được micro để nhận dạng. Chạm micro để thử lại.</string>
+    <string name="rec_err_network_stt">Nhận dạng giọng nói cần mạng. Kiểm tra kết nối rồi chạm micro để thử lại.</string>
+    <string name="rec_opt_autosave">Tự lưu khi đọc rõ ràng</string>
+    <string name="rec_opt_autosave_note">Tắt thì mọi phong bì đều chờ bạn xác nhận trước khi cộng vào tổng.</string>
 </resources>

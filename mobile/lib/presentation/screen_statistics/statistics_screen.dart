@@ -30,184 +30,195 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
     c.reload();
   }
 
-  String _label(RelationshipStat r) => r.label.isEmpty ? 'rel_none'.tr : r.label;
+  String _label(RelationshipStat r) =>
+      r.label.isEmpty ? 'rel_none'.tr : r.label;
 
   @override
   Widget build(BuildContext context) => GradientScaffold(
-    appBar: AppHeader(title: 'stats_title'.tr),
-    body: SafeArea(
-      child: Obx(() {
-        final ev = Get.find<EventController>().active.value;
-        final s = c.stats.value;
-        if (ev == null) {
-          return EmptyState(
-            icon: Icons.event_busy_rounded,
-            title: 'home_no_event_title'.tr,
-          );
-        }
-        return ListView(
-          padding: const EdgeInsets.fromLTRB(20, 4, 20, 24),
-          children: [
-            Text(
-              ev.name,
-              textAlign: TextAlign.center,
-              style: const TextStyle(color: AppColors.textSecondary),
-            ),
-            const SizedBox(height: 10),
-            _segmented(),
-            const SizedBox(height: 14),
-            SoftCard(
-              padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
-              child: Column(
-                children: [
-                  Text(
-                    'total_received'.tr,
-                    style: const TextStyle(
-                      color: AppColors.textSecondary,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  FittedBox(
-                    fit: BoxFit.scaleDown,
-                    child: Text(
-                      Money.format(s.totalVnd),
-                      style: const TextStyle(
-                        fontSize: 34,
-                        fontWeight: FontWeight.w800,
-                        color: AppColors.primary,
+        appBar: AppHeader(title: 'stats_title'.tr),
+        body: SafeArea(
+          child: Obx(() {
+            final ev = Get.find<EventController>().active.value;
+            final s = c.stats.value;
+            if (ev == null) {
+              return EmptyState(
+                icon: Icons.event_busy_rounded,
+                title: 'home_no_event_title'.tr,
+              );
+            }
+            return ListView(
+              padding: const EdgeInsets.fromLTRB(20, 4, 20, 24),
+              children: [
+                Text(
+                  ev.name,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(color: AppColors.textSecondary),
+                ),
+                const SizedBox(height: 10),
+                _segmented(),
+                const SizedBox(height: 14),
+                SoftCard(
+                  padding:
+                      const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+                  child: Column(
+                    children: [
+                      Text(
+                        'total_received'.tr,
+                        style: const TextStyle(
+                          color: AppColors.textSecondary,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
+                      const SizedBox(height: 6),
+                      FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text(
+                          Money.format(s.totalVnd),
+                          style: const TextStyle(
+                            fontSize: 34,
+                            fontWeight: FontWeight.w800,
+                            color: AppColors.primary,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: StatCard(
+                        icon: Icons.mail_outline_rounded,
+                        value: '${s.envelopes}',
+                        label: 'envelopes'.tr,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: StatCard(
+                        icon: Icons.groups_2_outlined,
+                        value: '${s.guests}',
+                        label: 'guests'.tr,
+                      ),
+                    ),
+                  ],
+                ),
+                if (s.envelopes > 0) ...[
+                  const SizedBox(height: 12),
+                  SoftCard(
+                    padding: const EdgeInsets.all(14),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'stats_by_side'.tr,
+                          style: const TextStyle(fontWeight: FontWeight.w800),
+                        ),
+                        const SizedBox(height: 8),
+                        for (final side in GiftSide.all)
+                          Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 4),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  side == GiftSide.parents
+                                      ? Icons.family_restroom_rounded
+                                      : Icons.emoji_people_rounded,
+                                  color: AppColors.primary,
+                                  size: 20,
+                                ),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                    child: Text(GiftSide.labelKey(side).tr)),
+                                Text(
+                                  '${s.bySide.where((e) => e.side == side).fold<int>(0, (a, b) => a + b.count)} · ${Money.format(s.bySide.where((e) => e.side == side).fold<int>(0, (a, b) => a + b.totalVnd))}',
+                                  style: const TextStyle(
+                                      fontWeight: FontWeight.w800),
+                                ),
+                              ],
+                            ),
+                          ),
+                      ],
                     ),
                   ),
                 ],
-              ),
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: StatCard(
-                    icon: Icons.mail_outline_rounded,
-                    value: '${s.envelopes}',
-                    label: 'envelopes'.tr,
+                if (s.pendingCount > 0) ...[
+                  const SizedBox(height: 12),
+                  ErrorBanner(
+                    warning: true,
+                    icon: Icons.hourglass_top_rounded,
+                    message: 'stats_pending_note'.trParams({
+                      'args1': '${s.pendingCount}',
+                      'args2': Money.format(s.pendingVnd),
+                    }),
                   ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: StatCard(
-                    icon: Icons.groups_2_outlined,
-                    value: '${s.guests}',
-                    label: 'guests'.tr,
-                  ),
-                ),
-              ],
-            ),
-            if (s.envelopes > 0) ...[
-              const SizedBox(height: 12),
-              SoftCard(
-                padding: const EdgeInsets.all(14),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'stats_by_side'.tr,
-                      style: const TextStyle(fontWeight: FontWeight.w800),
+                ],
+                const SizedBox(height: 16),
+                if (s.envelopes == 0)
+                  SizedBox(
+                    height: 220,
+                    child: EmptyState(
+                      icon: Icons.bar_chart_rounded,
+                      title: 'stats_empty'.tr,
                     ),
-                    const SizedBox(height: 8),
-                    for (final side in GiftSide.all)
-                      Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 4),
-                        child: Row(
-                          children: [
-                            Icon(
-                              side == GiftSide.parents
-                                  ? Icons.family_restroom_rounded
-                                  : Icons.emoji_people_rounded,
-                              color: AppColors.primary,
-                              size: 20,
-                            ),
-                            const SizedBox(width: 10),
-                            Expanded(child: Text(GiftSide.labelKey(side).tr)),
-                            Text(
-                              '${s.bySide.where((e) => e.side == side).fold<int>(0, (a, b) => a + b.count)} · ${Money.format(s.bySide.where((e) => e.side == side).fold<int>(0, (a, b) => a + b.totalVnd))}',
-                              style: const TextStyle(fontWeight: FontWeight.w800),
-                            ),
-                          ],
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-            ],
-            if (s.pendingCount > 0) ...[
-              const SizedBox(height: 12),
-              ErrorBanner(
-                warning: true,
-                icon: Icons.hourglass_top_rounded,
-                message: 'stats_pending_note'.trParams({
-                  'args1': '${s.pendingCount}',
-                  'args2': Money.format(s.pendingVnd),
-                }),
-              ),
-            ],
-            const SizedBox(height: 16),
-            if (s.envelopes == 0)
-              SizedBox(
-                height: 220,
-                child: EmptyState(
-                  icon: Icons.bar_chart_rounded,
-                  title: 'stats_empty'.tr,
-                ),
-              )
-            else if (_tab == 0)
-              _overview(s)
-            else
-              _byRelationship(s),
-            if (s.envelopes > 0) ...[
-              const SizedBox(height: 16),
-              TopGiversCard(
-                entries: [for (final g in s.topGuests) (name: g.name, amount: g.totalVnd)],
-              ),
-            ],
-          ],
-        );
-      }),
-    ),
-  );
+                  )
+                else if (_tab == 0)
+                  _overview(s)
+                else
+                  _byRelationship(s),
+                if (s.envelopes > 0) ...[
+                  const SizedBox(height: 16),
+                  TopGiversCard(
+                    entries: [
+                      for (final g in s.topGuests)
+                        (name: g.name, amount: g.totalVnd)
+                    ],
+                  ),
+                ],
+              ],
+            );
+          }),
+        ),
+      );
 
   Widget _segmented() => Container(
-    padding: const EdgeInsets.all(4),
-    decoration: BoxDecoration(
-      color: AppColors.chip,
-      borderRadius: BorderRadius.circular(14),
-    ),
-    child: Row(
-      children: [
-        for (final t in [(0, 'stats_tab_overview'.tr), (1, 'stats_tab_rel'.tr)])
-          Expanded(
-            child: GestureDetector(
-              onTap: () => setState(() => _tab = t.$1),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 180),
-                padding: const EdgeInsets.symmetric(vertical: 11),
-                decoration: BoxDecoration(
-                  color: _tab == t.$1 ? AppColors.primary : Colors.transparent,
-                  borderRadius: BorderRadius.circular(11),
-                ),
-                child: Text(
-                  t.$2,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontWeight: FontWeight.w700,
-                    color: _tab == t.$1 ? Colors.white : AppColors.primary,
+        padding: const EdgeInsets.all(4),
+        decoration: BoxDecoration(
+          color: AppColors.chip,
+          borderRadius: BorderRadius.circular(14),
+        ),
+        child: Row(
+          children: [
+            for (final t in [
+              (0, 'stats_tab_overview'.tr),
+              (1, 'stats_tab_rel'.tr)
+            ])
+              Expanded(
+                child: GestureDetector(
+                  onTap: () => setState(() => _tab = t.$1),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 180),
+                    padding: const EdgeInsets.symmetric(vertical: 11),
+                    decoration: BoxDecoration(
+                      color:
+                          _tab == t.$1 ? AppColors.primary : Colors.transparent,
+                      borderRadius: BorderRadius.circular(11),
+                    ),
+                    child: Text(
+                      t.$2,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontWeight: FontWeight.w700,
+                        color: _tab == t.$1 ? Colors.white : AppColors.primary,
+                      ),
+                    ),
                   ),
                 ),
               ),
-            ),
-          ),
-      ],
-    ),
-  );
+          ],
+        ),
+      );
 
   Widget _overview(EventStats s) {
     final total = s.byRelationship.fold<int>(0, (a, b) => a + b.count);
@@ -280,7 +291,8 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
   }
 
   Widget _byRelationship(EventStats s) {
-    final max = s.byRelationship.fold<int>(0, (a, b) => math.max(a, b.totalVnd));
+    final max =
+        s.byRelationship.fold<int>(0, (a, b) => math.max(a, b.totalVnd));
     return Column(
       children: [
         for (var i = 0; i < s.byRelationship.length; i++) ...[
@@ -318,7 +330,8 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  'rel_count'.trParams({'args1': '${s.byRelationship[i].count}'}),
+                  'rel_count'
+                      .trParams({'args1': '${s.byRelationship[i].count}'}),
                   style: const TextStyle(
                     color: AppColors.textSecondary,
                     fontSize: 12,

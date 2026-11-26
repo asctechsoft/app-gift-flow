@@ -127,7 +127,11 @@ class _ExportScreenState extends State<ExportScreen> {
     final total = _preview
         .where((g) => g.isConfirmed)
         .fold<int>(0, (a, b) => a + b.amountVnd);
-    final noCol = !_cols.guest && !_cols.amount && !_cols.relationship && !_cols.side && !_cols.note;
+    final noCol = !_cols.guest &&
+        !_cols.amount &&
+        !_cols.relationship &&
+        !_cols.side &&
+        !_cols.note;
     return GradientScaffold(
       appBar: AppHeader(title: 'export_title'.tr),
       body: SafeArea(
@@ -199,7 +203,7 @@ class _ExportScreenState extends State<ExportScreen> {
                         label: Text(
                           _range == _Range.custom && _custom != null
                               ? '${DateFmt.display(DateFmt.iso(_custom!.start))} - '
-                                    '${DateFmt.display(DateFmt.iso(_custom!.end))}'
+                                  '${DateFmt.display(DateFmt.iso(_custom!.end))}'
                               : 'range_custom'.tr,
                         ),
                         selected: _range == _Range.custom,
@@ -278,29 +282,30 @@ class _ExportScreenState extends State<ExportScreen> {
     );
   }
 
-  Widget _check(String label, bool v, ValueChanged<bool> on) => CheckboxListTile(
-    value: v,
-    onChanged: (x) => on(x ?? false),
-    title: Text(label),
-    activeColor: AppColors.primary,
-    controlAffinity: ListTileControlAffinity.leading,
-    contentPadding: const EdgeInsets.symmetric(horizontal: 8),
-  );
+  Widget _check(String label, bool v, ValueChanged<bool> on) =>
+      CheckboxListTile(
+        value: v,
+        onChanged: (x) => on(x ?? false),
+        title: Text(label),
+        activeColor: AppColors.primary,
+        controlAffinity: ListTileControlAffinity.leading,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 8),
+      );
 
   Widget _rangeChip(String label, _Range r) => ChoiceChip(
-    label: Text(label),
-    selected: _range == r,
-    onSelected: (_) {
-      setState(() => _range = r);
-      _refresh();
-    },
-    showCheckmark: false,
-    selectedColor: AppColors.primary,
-    backgroundColor: AppColors.chip,
-    side: BorderSide.none,
-    labelStyle: TextStyle(
-      color: _range == r ? Colors.white : AppColors.primary,
-      fontWeight: FontWeight.w700,
-    ),
-  );
+        label: Text(label),
+        selected: _range == r,
+        onSelected: (_) {
+          setState(() => _range = r);
+          _refresh();
+        },
+        showCheckmark: false,
+        selectedColor: AppColors.primary,
+        backgroundColor: AppColors.chip,
+        side: BorderSide.none,
+        labelStyle: TextStyle(
+          color: _range == r ? Colors.white : AppColors.primary,
+          fontWeight: FontWeight.w700,
+        ),
+      );
 }

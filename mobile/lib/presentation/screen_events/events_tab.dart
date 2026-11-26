@@ -20,14 +20,16 @@ class EventsTab extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             const SizedBox(height: 8),
-            _tile(Icons.check_circle_outline_rounded, 'event_select'.tr, 'select'),
+            _tile(Icons.check_circle_outline_rounded, 'event_select'.tr,
+                'select'),
             _tile(Icons.edit_outlined, 'edit'.tr, 'edit'),
             _tile(
               e.isClosed ? Icons.lock_open_rounded : Icons.lock_outline_rounded,
               e.isClosed ? 'event_reopen'.tr : 'event_close'.tr,
               'toggle',
             ),
-            _tile(Icons.delete_outline_rounded, 'delete'.tr, 'delete', danger: true),
+            _tile(Icons.delete_outline_rounded, 'delete'.tr, 'delete',
+                danger: true),
             const SizedBox(height: 8),
           ],
         ),

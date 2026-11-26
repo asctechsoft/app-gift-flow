@@ -81,7 +81,9 @@ class ExportService {
         if (columns.amount) IntCellValue(g.amountVnd),
         if (columns.relationship)
           TextCellValue(TextUtils.excelSafe(g.relationship ?? '')),
-        if (columns.side) TextCellValue(labels[g.side == 'parents' ? 'side_parents' : 'side_mine']!),
+        if (columns.side)
+          TextCellValue(
+              labels[g.side == 'parents' ? 'side_parents' : 'side_mine']!),
         if (columns.note) TextCellValue(TextUtils.excelSafe(g.note ?? '')),
         if (includePending)
           TextCellValue(

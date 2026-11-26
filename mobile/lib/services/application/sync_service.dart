@@ -185,36 +185,36 @@ class SyncService extends GetxService {
   }
 
   GiftEvent _eventFromJson(Map<String, dynamic> j) => GiftEvent(
-    id: j['id'] as String,
-    name: j['name'] as String,
-    type: (j['type'] as String?) ?? 'wedding',
-    eventDate: j['event_date'] as String,
-    location: j['location'] as String?,
-    status: (j['status'] as String?) ?? 'active',
-    createdAt: DateTime.parse(j['created_at'] as String).toLocal(),
-    updatedAt: DateTime.parse(j['updated_at'] as String).toLocal(),
-    deletedAt: j['deleted_at'] == null
-        ? null
-        : DateTime.parse(j['deleted_at'] as String).toLocal(),
-    synced: true,
-  );
+        id: j['id'] as String,
+        name: j['name'] as String,
+        type: (j['type'] as String?) ?? 'wedding',
+        eventDate: j['event_date'] as String,
+        location: j['location'] as String?,
+        status: (j['status'] as String?) ?? 'active',
+        createdAt: DateTime.parse(j['created_at'] as String).toLocal(),
+        updatedAt: DateTime.parse(j['updated_at'] as String).toLocal(),
+        deletedAt: j['deleted_at'] == null
+            ? null
+            : DateTime.parse(j['deleted_at'] as String).toLocal(),
+        synced: true,
+      );
 
   GiftRecord _giftFromJson(Map<String, dynamic> j) => GiftRecord(
-    id: j['id'] as String,
-    eventId: j['event_id'] as String,
-    guestName: (j['guest_name'] as String?) ?? '',
-    relationship: j['relationship_label'] as String?,
-    amountVnd: (j['amount_vnd'] as num).toInt(),
-    note: j['note'] as String?,
-    status: GiftStatus.fromWire(j['status'] as String?),
-    source: GiftSource.fromWire(j['source'] as String?),
-    side: GiftSide.normalize(j['side'] as String?),
-    transcript: j['transcript'] as String?,
-    createdAt: DateTime.parse(j['created_at'] as String).toLocal(),
-    updatedAt: DateTime.parse(j['updated_at'] as String).toLocal(),
-    deletedAt: j['deleted_at'] == null
-        ? null
-        : DateTime.parse(j['deleted_at'] as String).toLocal(),
-    synced: true,
-  );
+        id: j['id'] as String,
+        eventId: j['event_id'] as String,
+        guestName: (j['guest_name'] as String?) ?? '',
+        relationship: j['relationship_label'] as String?,
+        amountVnd: (j['amount_vnd'] as num).toInt(),
+        note: j['note'] as String?,
+        status: GiftStatus.fromWire(j['status'] as String?),
+        source: GiftSource.fromWire(j['source'] as String?),
+        side: GiftSide.normalize(j['side'] as String?),
+        transcript: j['transcript'] as String?,
+        createdAt: DateTime.parse(j['created_at'] as String).toLocal(),
+        updatedAt: DateTime.parse(j['updated_at'] as String).toLocal(),
+        deletedAt: j['deleted_at'] == null
+            ? null
+            : DateTime.parse(j['deleted_at'] as String).toLocal(),
+        synced: true,
+      );
 }

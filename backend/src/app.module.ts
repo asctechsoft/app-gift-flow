@@ -12,6 +12,7 @@ import { GiftsModule } from './modules/gifts/gifts.module';
 import { HealthModule } from './modules/health/health.module';
 import { QuotasModule } from './modules/quotas/quotas.module';
 import { StatisticsModule } from './modules/statistics/statistics.module';
+import { ParseModule } from './modules/ai-parse/parse.module';
 import { VoiceModule } from './modules/voice/voice.module';
 
 @Global()
@@ -42,6 +43,7 @@ export class AppModule {
         EventsModule,
         GiftsModule,
         VoiceModule,
+        ParseModule,
         StatisticsModule,
         ExportModule,
         HealthModule,

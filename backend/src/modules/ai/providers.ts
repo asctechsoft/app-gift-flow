@@ -74,7 +74,7 @@ const EXTRACTION_SCHEMA = {
 
 const SYSTEM_PROMPT = `Bạn trích xuất dữ liệu tiền mừng cưới từ MỘT lượt nói tiếng Việt (một phong bì).
 Chỉ trả JSON đúng schema. Quy tắc:
-- guest_name: tên khách như người nói; nếu có họ tên đầy đủ có thể bỏ xưng hô (Anh/Chị...). Không bịa; không có thì null.
+- guest_name: tên khách đúng như người nói, kể cả xưng hô đứng đầu ("Anh Long"); không bịa; không có tên thì null.
 - relationship_label: chỉ khi người nói nêu rõ (vd "bạn bố", "bên ngoại", "đồng nghiệp"); không suy đoán, thiếu thì null.
 - amount_vnd: số nguyên VND. "hai triệu rưỡi"=2500000, "một triệu hai"=1200000, "500k"=500000.
 - Nếu số tiền < 1000 mà không rõ đơn vị (vd "năm trăm"): amount_vnd=null, needs_review=true, warnings gồm "amount_ambiguous".
@@ -83,10 +83,12 @@ Chỉ trả JSON đúng schema. Quy tắc:
 - Nếu không phải lời đọc tiền mừng (ồn, người khác nói): tất cả null, needs_review=true, warnings ["no_content"].
 - Ngữ cảnh: người ghi đang đọc to từng phong bì tiền mừng cưới. Lời nói thường ngắn, dạng "<xưng hô> <tên> <quan hệ> <số tiền>" nhưng thứ tự có thể đảo; bỏ qua từ đệm (ờ, à, ừm, mừng, bao, phong bì, cho, nhé, dạ).
 - Số tiền tiếng Việt: "một triệu hai"=1200000, "hai chục"=20000 chỉ khi nói rõ nghìn ("hai chục nghìn"); "năm trăm"/"năm trăm nghìn"/"500k"/"500 ngàn"=500000; "một triệu rưỡi"=1500000; "hai triệu năm"=2500000; chữ số viết liền ("2tr", "2 triệu") cũng hợp lệ. Mọi số quy về VND nguyên.
-- guest_name: giữ nguyên dấu tiếng Việt, viết hoa chữ cái đầu mỗi từ; bỏ xưng hô đứng đầu (anh, chị, cô, chú, bác, em, ông, bà, cậu, mợ, thím, dì) nhưng nếu chỉ có xưng hô + tên gọi (ví dụ "bác Tư") thì giữ cả "Bác Tư".
+- guest_name: GIỮ NGUYÊN xưng hô như người nói ("Anh Long", "Chị Mai", "Bác Tư", "Ông Tuấn"), giữ dấu tiếng Việt, viết hoa chữ cái đầu mỗi từ. Không bỏ xưng hô, không tự đổi hay "sửa" tên.
 - relationship_label: dạng ngắn gọn, viết thường (ví dụ "bạn bố", "bạn mẹ", "họ hàng", "đồng nghiệp", "bạn thân", "hàng xóm", "bên ngoại", "bên nội"). Không suy đoán từ xưng hô.
 - Nếu lượt nói chứa NHIỀU người hoặc NHIỀU số tiền khác nhau: chỉ lấy người/số tiền đầu tiên và thêm warnings "multiple_entries", needs_review=true.
+- Tiếng lóng: "củ" = triệu ("hai củ"=2000000, "hai củ rưỡi"=2500000). Chỉ hiểu vậy khi đứng ngay sau số; "cụ" (người lớn tuổi) không phải đơn vị tiền.
 - Không bao giờ bịa tên hoặc số tiền không có trong lời nói.
+- Văn bản đến từ nhận dạng giọng nói nên có thể sai chính tả: không sửa tên thành tên "đúng hơn" khi không có bằng chứng; nếu tên nghe vô nghĩa hoặc không chắc thì vẫn giữ nguyên chữ nghe được và thêm warnings "name_uncertain", needs_review=true.
 Không giải thích, không thêm trường.`;
 
 export class OpenAiExtractionProvider implements ExtractionProvider {

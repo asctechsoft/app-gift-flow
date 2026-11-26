@@ -199,6 +199,74 @@ describe('GiftFlow API (e2e, sql.js in-memory, mock AI)', () => {
     expect(over.body.code).toBe('quota_exceeded');
   });
 
+  describe('POST /v1/ai/parse-gift', () => {
+    const parse = (auth: string, ev: string, text: string, requestId = randomUUID()) =>
+      request(http).post('/v1/ai/parse-gift').set('Authorization', auth).send({ event_id: ev, request_id: requestId, text });
+
+    it.each([
+      ['Anh Long mừng hai triệu', 2_000_000, false],
+      ['Chị Mai mừng năm trăm nghìn', 500_000, false],
+      ['Bác Hùng bạn bố mừng năm triệu', 5_000_000, false],
+      ['Cô Lan một triệu rưỡi', 1_500_000, false],
+      ['Anh Nam mừng hai củ', 2_000_000, false],
+      ['Ông Tuấn mừng một triệu hai', 1_200_000, false],
+      ['Nguyễn Văn Minh mừng hai triệu năm trăm', 2_500_000, false],
+      ['Anh Long mừng', null, true],
+    ])('"%s" -> %p (review=%p)', async (text, amount, review) => {
+      const { auth } = await guest();
+      const ev = await mkEvent(auth);
+      const r = await parse(auth, ev, text).expect(200);
+      expect(r.body.data.amount).toBe(amount);
+      expect(r.body.data.currency).toBe('VND');
+      expect(r.body.needs_review).toBe(review);
+      expect(r.body.transcript).toBe(text);
+      expect(r.body.possible_duplicate).toBe(false);
+    });
+
+    it('chỉ phân tích: KHÔNG tạo bản ghi quà', async () => {
+      const { auth } = await guest();
+      const ev = await mkEvent(auth);
+      await parse(auth, ev, 'Anh Long mừng hai triệu').expect(200);
+      const list = await request(http).get(`/v1/events/${ev}/gifts`).set('Authorization', auth).expect(200);
+      const items = Array.isArray(list.body) ? list.body : list.body.items;
+      expect(items).toHaveLength(0);
+    });
+
+    it('idempotent theo request_id: cùng kết quả, chỉ trừ 1 lượt quota', async () => {
+      const { auth } = await guest();
+      const ev = await mkEvent(auth);
+      const rid = randomUUID();
+      const a = await parse(auth, ev, 'Anh Long mừng hai triệu', rid).expect(200);
+      const b = await parse(auth, ev, 'Anh Long mừng hai triệu', rid).expect(200);
+      expect(b.body).toEqual(a.body);
+      const me = await request(http).get('/v1/me').set('Authorization', auth).expect(200);
+      expect(me.body.quota.used).toBe(1);
+    });
+
+    it('báo possible_duplicate khi đã có khoản cùng tên + số tiền (không tự gộp)', async () => {
+      const { auth } = await guest();
+      const ev = await mkEvent(auth);
+      await request(http).put(`/v1/gifts/${randomUUID()}`).set('Authorization', auth)
+        .send({ event_id: ev, guest_name: 'Anh Long', amount_vnd: 2_000_000, status: 'confirmed', source: 'manual', updated_at: new Date().toISOString() })
+        .expect(200);
+      const r = await parse(auth, ev, 'Anh Long mừng hai triệu').expect(200);
+      expect(r.body.possible_duplicate).toBe(true);
+      expect(r.body.needs_review).toBe(true);
+      expect(r.body.duplicate_candidates).toHaveLength(1);
+    });
+
+    it('xác thực + quyền sự kiện + dữ liệu đầu vào', async () => {
+      const a = await guest();
+      const b = await guest();
+      const ev = await mkEvent(a.auth);
+      await request(http).post('/v1/ai/parse-gift').send({ event_id: ev, request_id: randomUUID(), text: 'Anh Long hai triệu' }).expect(401);
+      await parse(b.auth, ev, 'Anh Long mừng hai triệu').expect(404); // sự kiện của người khác
+      await parse(a.auth, ev, '').expect(400);
+      await parse(a.auth, ev, 'x'.repeat(501)).expect(400);
+      await request(http).post('/v1/ai/parse-gift').set('Authorization', a.auth).send({ event_id: 'bad', request_id: 'bad', text: 'Anh Long' }).expect(400);
+    });
+  });
+
   it('voice: nhận văn bản đã nhận dạng trên máy (không audio) -> trích xuất, bỏ qua STT', async () => {
     const { auth } = await guest();
     const ev = await mkEvent(auth);

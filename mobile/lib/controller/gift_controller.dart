@@ -71,7 +71,8 @@ class GiftController extends GetxController {
                 ],
         ),
       );
-      relCounts.assignAll(await _repo.relationshipCounts(id, side: sideFilter.value));
+      relCounts.assignAll(
+          await _repo.relationshipCounts(id, side: sideFilter.value));
       stats.value = await _repo.stats(id);
       _events.refreshTotals();
     } finally {
@@ -86,9 +87,10 @@ class GiftController extends GetxController {
     String name,
     int amount, {
     String? excludeId,
-  }) => eventId == null
-      ? Future.value(const [])
-      : _repo.findDuplicates(eventId!, name, amount, excludeId: excludeId);
+  }) =>
+      eventId == null
+          ? Future.value(const [])
+          : _repo.findDuplicates(eventId!, name, amount, excludeId: excludeId);
 
   /// Nhập tay (X02): lưu local + enqueue sync. Đã xác nhận ngay (người nhập
   /// tự điền nên không mơ hồ).
@@ -149,14 +151,15 @@ class GiftController extends GetxController {
     String? name,
     int? amount,
     String? relationship,
-  }) => updateGift(
-    g,
-    name: name ?? g.guestName,
-    amount: amount ?? g.amountVnd,
-    relationship: relationship ?? g.relationship,
-    note: g.note,
-    status: GiftStatus.confirmed,
-  );
+  }) =>
+      updateGift(
+        g,
+        name: name ?? g.guestName,
+        amount: amount ?? g.amountVnd,
+        relationship: relationship ?? g.relationship,
+        note: g.note,
+        status: GiftStatus.confirmed,
+      );
 
   Future<void> delete(String id) async {
     await _repo.softDelete(id);

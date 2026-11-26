@@ -1,12 +1,9 @@
 import 'dart:async';
-import 'dart:io';
 
 import 'package:asc_common/asc_common.dart';
 import 'package:flutter/widgets.dart';
 import 'package:get/get.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'package:record/record.dart';
 import 'package:speech_to_text/speech_recognition_error.dart';
 import 'package:speech_to_text/speech_recognition_result.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
@@ -15,19 +12,23 @@ import 'package:uuid/uuid.dart';
 import '../configs/app_config.dart';
 import '../models/data_models/gift_event.dart';
 import '../models/data_models/gift_record.dart';
+import '../models/data_models/parsed_gift.dart';
 import '../models/ui_models/gift_status.dart';
 import '../repository/gift_repository.dart';
 import '../services/application/api_client.dart';
+import '../services/application/speech_logic.dart';
 import 'event_controller.dart';
 import 'gift_controller.dart';
 import 'settings_controller.dart';
 
 enum RecState { idle, starting, listening, denied, stopping, error }
 
-/// Phiên ghi âm liên tục (S05). Mỗi lượt nói = 1 phong bì:
-/// cắt segment (im lặng / bấm mic) -> tạo bản ghi `processing` ngay -> upload
-/// nền qua backend (STT -> LLM -> validate) -> cập nhật thành confirmed /
-/// pending_review / failed. Mic chỉ chạy khi app foreground (không ghi nền).
+/// Phiên ghi nhận bằng giọng nói (S05).
+///
+/// Luồng: nhận dạng giọng nói TRÊN THIẾT BỊ (chữ hiện ngay khi nói) -> câu hoàn
+/// chỉnh -> backend `POST /v1/ai/parse-gift` (GPT, chỉ phân tích) -> business
+/// rules -> lưu bản ghi (đã xác nhận / chờ xác nhận) vào DB local + đồng bộ.
+/// KHÔNG upload audio. Mic chỉ chạy khi màn ghi âm đang mở.
 class RecordingController extends GetxController with WidgetsBindingObserver {
   RecordingController(
     this._api,
@@ -45,27 +46,21 @@ class RecordingController extends GetxController with WidgetsBindingObserver {
   static const _uuid = Uuid();
   static final AscLogger _log = AscLogger();
 
-  final AudioRecorder _rec = AudioRecorder();
-
-  /// Nhận dạng giọng nói NGAY TRÊN MÁY (Android SpeechRecognizer / iOS Speech):
-  /// chữ hiện trực tiếp khi nói; chỉ văn bản gửi lên backend để trích xuất.
-  /// Nếu máy không hỗ trợ thì quay về ghi âm + STT trên server.
-  final stt.SpeechToText _stt = stt.SpeechToText();
-  bool _useStt = false;
-  String _sttLocale = 'vi_VN';
-  bool _restarting = false;
-
-  /// Chữ đang nghe được (partial) - hiện ngay trên màn ghi âm.
-  final RxString liveText = ''.obs;
-
-  /// Dòng trạng thái cho người dùng/dev: đang dùng nhận dạng nào, ngôn ngữ nào, lỗi gần nhất.
-  final RxString sttInfo = ''.obs;
+  final stt.SpeechToText _speech = stt.SpeechToText();
+  bool _speechReady = false;
+  String _locale = 'vi_VN';
 
   final Rx<RecState> state = RecState.idle.obs;
   final RxList<GiftRecord> items = <GiftRecord>[].obs;
-  final RxDouble level = 0.0.obs; // 0..1 cho animation mic
-  final RxnString banner = RxnString(); // X05 lỗi mạng/quota
+  final RxDouble level = 0.0.obs; // 0..1 cho hiệu ứng sóng âm
+  final RxnString banner = RxnString();
   final RxBool speaking = false.obs;
+
+  /// Chữ đang nhận dạng (partial) - hiện ngay trên màn ghi âm.
+  final RxString liveText = ''.obs;
+
+  /// Dòng trạng thái nhỏ (ngôn ngữ nhận dạng, số lần nghe...) để chẩn đoán.
+  final RxString sttInfo = ''.obs;
 
   /// Nhóm khách áp cho các phong bì của phiên (đổi được giữa chừng).
   final RxString side = GiftSide.mine.obs;
@@ -74,17 +69,21 @@ class RecordingController extends GetxController with WidgetsBindingObserver {
   GiftEvent? _event;
   GiftEvent? get event => _event;
 
-  StreamSubscription<Amplitude>? _ampSub;
-  String? _segPath;
-  DateTime _segStart = DateTime.now();
-  DateTime _lastVoice = DateTime.now();
-  bool _hadSpeech = false;
-  bool _cutting = false;
-  bool _active = false;
+  late final UtteranceTracker _tracker = UtteranceTracker(
+    onLive: (t) => liveText.value = t,
+    onUtterance: _submitText,
+  );
+  final TurnPolicy _policy = TurnPolicy();
 
-  // Hàng đợi upload tuần tự; giữ file để thử lại cùng request_id.
+  /// Phiên đang mở (màn ghi âm đang hiển thị). Khi false: tuyệt đối không bật mic.
+  bool _sessionOpen = false;
+  bool _turnHadUtterance = false;
+  bool _turnEnding = false;
+  Timer? _flushTimer;
+  int _generation = 0; // bỏ qua callback của lượt nghe cũ
+
+  // Hàng đợi gọi AI tuần tự (giữ thứ tự, không nhầm transcript giữa các lượt).
   Future<void> _queue = Future.value();
-  final Map<String, _Pending> _audio = {};
   int _inFlight = 0;
 
   @override
@@ -96,19 +95,15 @@ class RecordingController extends GetxController with WidgetsBindingObserver {
   @override
   void onClose() {
     WidgetsBinding.instance.removeObserver(this);
-    _teardown();
-    _rec.dispose();
-    for (final p in _audio.values) {
-      _deleteFile(p.path);
-    }
+    abort();
     super.onClose();
   }
 
-  /// App xuống nền / có cuộc gọi: dừng mic an toàn, không mất dữ liệu.
+  /// App xuống nền / có cuộc gọi: tắt mic ngay (không ghi nền), giữ dữ liệu.
   @override
   void didChangeAppLifecycleState(AppLifecycleState s) {
     if (s == AppLifecycleState.paused || s == AppLifecycleState.inactive) {
-      if (_active) stopSession(auto: true);
+      if (_sessionOpen) _pauseListening();
     }
   }
 
@@ -120,74 +115,70 @@ class RecordingController extends GetxController with WidgetsBindingObserver {
       state.value = RecState.error;
       return;
     }
+    _sessionOpen = true;
+    banner.value = null;
     state.value = RecState.starting;
     final status = await Permission.microphone.request();
+    if (!_sessionOpen) return; // người dùng đã rời màn hình trong lúc hỏi quyền
     if (!status.isGranted) {
       state.value = RecState.denied; // X04
       return;
     }
-    sttInfo.value = 'Đang khởi tạo nhận dạng giọng nói...';
-    _useStt = await _initStt();
-    if (_useStt) {
-      await _beginListen();
-    } else {
-      if (sttInfo.value.startsWith('Đang khởi tạo')) {
-        sttInfo.value = 'Máy không bật được nhận dạng giọng nói -> ghi âm gửi server';
-      }
-      await _beginSegment();
+    if (!await _initSpeech()) {
+      if (_sessionOpen) state.value = RecState.error;
+      return;
     }
+    _policy.userStartedTurn();
+    await _listenTurn();
   }
 
-  Future<bool> _initStt() async {
+  Future<void> openAppSettingsForMic() => openAppSettings();
+
+  Future<bool> _initSpeech() async {
+    if (_speechReady) return true;
     try {
-      final ok = await _stt.initialize(
-        onStatus: _onSttStatus,
-        onError: _onSttError,
+      final ok = await _speech.initialize(
+        onStatus: _onStatus,
+        onError: _onError,
       );
-      if (!ok) return false;
-      final locales = await _stt.locales();
-      // Ngôn ngữ mặc định của máy; không có thì tiếng Việt (ngôn ngữ ghi phong bì).
-      final device = WidgetsBinding.instance.platformDispatcher.locale;
-      String norm(String id) => id.toLowerCase().replaceAll('-', '_');
-      final want = norm('${device.languageCode}_${device.countryCode ?? ''}');
-      stt.LocaleName? pick;
-      for (final l in locales) {
-        if (norm(l.localeId) == want) pick = l;
-      }
-      pick ??= locales.cast<stt.LocaleName?>().firstWhere(
-        (l) => norm(l!.localeId).startsWith(device.languageCode.toLowerCase()),
-        orElse: () => null,
-      );
-      pick ??= locales.cast<stt.LocaleName?>().firstWhere(
-        (l) => norm(l!.localeId).startsWith('vi'),
-        orElse: () => null,
-      );
-      if (pick == null) {
-        sttInfo.value = 'Máy chưa hỗ trợ nhận dạng giọng nói -> dùng server';
+      if (!ok) {
+        banner.value = 'rec_err_no_service'.tr;
+        sttInfo.value = '';
         return false;
       }
-      _sttLocale = pick.localeId;
-      sttInfo.value = 'Nhận dạng trên máy · ${pick.name}';
+      final locales = await _speech.locales();
+      final id = pickVietnameseLocale(locales.map((l) => l.localeId));
+      if (id == null) {
+        banner.value = 'rec_err_no_vi'.tr;
+        sttInfo.value = '';
+        return false;
+      }
+      _locale = id;
+      sttInfo.value = 'speech: $id';
+      _speechReady = true;
       return true;
     } catch (e, st) {
-      _log.error('stt init failed', e, st);
-      sttInfo.value = 'Không khởi tạo được nhận dạng giọng nói -> dùng server';
+      _log.error('speech init failed', e, st);
+      banner.value = 'rec_err_no_service'.tr;
       return false;
     }
   }
 
-  Future<void> _beginListen() async {
-    if (_restarting) return;
-    _restarting = true;
+  /// Một lượt nghe = một phong bì. Chỉ tự gọi lại sau lượt CÓ câu hợp lệ.
+  Future<void> _listenTurn() async {
+    if (!_sessionOpen || !_speechReady || _speech.isListening) return;
+    final gen = ++_generation;
+    _turnHadUtterance = false;
+    _turnEnding = false;
+    _tracker.reset();
+    banner.value = null;
+    state.value = RecState.listening;
     try {
-      _active = true;
-      state.value = RecState.listening;
-      liveText.value = '';
-      await _stt.listen(
-        onResult: _onSttResult,
+      await _speech.listen(
+        onResult: (r) => _onResult(r, gen),
         onSoundLevelChange: _onSound,
         listenOptions: stt.SpeechListenOptions(
-          localeId: _sttLocale,
+          localeId: _locale,
           listenFor: const Duration(seconds: 60),
           pauseFor: Duration(milliseconds: _settings.silenceMs.value),
           partialResults: true,
@@ -196,12 +187,9 @@ class RecordingController extends GetxController with WidgetsBindingObserver {
         ),
       );
     } catch (e, st) {
-      _log.error('stt listen failed', e, st);
-      banner.value = 'rec_error_start'.tr;
-      state.value = RecState.error;
-      _active = false;
-    } finally {
-      _restarting = false;
+      _log.error('speech listen failed', e, st);
+      banner.value = 'rec_err_listen'.tr;
+      state.value = RecState.idle;
     }
   }
 
@@ -211,198 +199,146 @@ class RecordingController extends GetxController with WidgetsBindingObserver {
     speaking.value = v > 1;
   }
 
-  void _onSttResult(SpeechRecognitionResult r) {
-    liveText.value = r.recognizedWords;
-    if (r.finalResult) {
-      final text = r.recognizedWords.trim();
-      liveText.value = '';
-      if (text.replaceAll(RegExp(r'\s'), '').length >= 3) _submitText(text);
-    }
-  }
-
-  void _onSttStatus(String status) {
-    if ((status == 'done' || status == 'notListening') &&
-        _active &&
-        _useStt &&
-        !_stt.isListening) {
-      Future.delayed(const Duration(milliseconds: 350), () {
-        if (_active && _useStt && !_stt.isListening) _beginListen();
-      });
-    }
-  }
-
-  void _onSttError(SpeechRecognitionError e) {
-    _log.warning('stt error ${e.errorMsg}');
-    sttInfo.value = 'Lỗi nhận dạng: ${e.errorMsg}';
-    if (e.errorMsg.contains('permission')) {
-      _active = false;
-      state.value = RecState.denied;
-    }
-    // no_match / speech_timeout là bình thường: onStatus sẽ nghe lại.
-  }
-
-  Future<void> openAppSettingsForMic() => openAppSettings();
-
-  Future<void> _beginSegment() async {
-    try {
-      final dir = await getTemporaryDirectory();
-      _segPath = '${dir.path}/seg_${_uuid.v4()}.m4a';
-      await _rec.start(
-        const RecordConfig(
-          encoder: AudioEncoder.aacLc,
-          sampleRate: 16000,
-          numChannels: 1,
-          bitRate: 48000,
-          noiseSuppress: true,
-          echoCancel: true,
-        ),
-        path: _segPath!,
+  void _onResult(SpeechRecognitionResult r, int gen) {
+    if (gen != _generation) return; // callback muộn của lượt cũ
+    _tracker.onResult(r.recognizedWords, isFinal: r.finalResult);
+    sttInfo.value = 'speech: $_locale · ${_tracker.resultCount}';
+    _flushTimer?.cancel();
+    if (!r.finalResult) {
+      // Máy không gửi final: tự chốt câu khi người nói dừng.
+      _flushTimer = Timer(
+        Duration(milliseconds: _settings.silenceMs.value + 900),
+        () {
+          _tracker.flush();
+          _speech.stop();
+        },
       );
-      _segStart = DateTime.now();
-      _lastVoice = _segStart;
-      _hadSpeech = false;
-      _active = true;
-      state.value = RecState.listening;
-      await _ampSub?.cancel();
-      _ampSub = _rec
-          .onAmplitudeChanged(const Duration(milliseconds: 120))
-          .listen(_onAmp);
-    } catch (e, st) {
-      _log.error('begin segment failed', e, st);
-      banner.value = 'rec_error_start'.tr;
-      state.value = RecState.error;
-      _active = false;
     }
   }
 
-  void _onAmp(Amplitude a) {
-    if (!_active || _cutting) return;
-    final db = a.current; // dBFS, ~ -160..0
-    level.value = ((db + 55) / 55).clamp(0.0, 1.0);
-    final now = DateTime.now();
-    if (db > AppConfig.speechThresholdDb) {
-      _hadSpeech = true;
-      _lastVoice = now;
-      speaking.value = true;
-    } else {
+  void _onStatus(String status) {
+    if (status != 'done' && status != 'notListening') return;
+    if (!_sessionOpen || _turnEnding) return;
+    _turnEnding = true;
+    final gen = _generation;
+    // Chờ kết quả cuối (nếu có) rồi mới quyết định nghe tiếp.
+    Future.delayed(const Duration(milliseconds: 500), () {
+      if (gen != _generation || !_sessionOpen) return;
+      _flushTimer?.cancel();
+      _tracker.flush();
+      level.value = 0;
       speaking.value = false;
-    }
-    final elapsed = now.difference(_segStart).inMilliseconds;
-    if (_hadSpeech &&
-        _settings.autoSilenceCut.value &&
-        now.difference(_lastVoice).inMilliseconds >= _settings.silenceMs.value &&
-        elapsed >= AppConfig.minSegmentMs) {
-      cutSegment();
-    } else if (elapsed >= AppConfig.maxSegmentMs) {
-      cutSegment();
-    }
+      final again = _policy.shouldAutoRestart(
+        turnHadUtterance: _turnHadUtterance,
+      );
+      if (again) {
+        Future.delayed(const Duration(milliseconds: 300), _listenTurn);
+      } else if (state.value == RecState.listening) {
+        state.value = RecState.idle; // chờ người dùng chạm mic
+      }
+    });
   }
 
-  /// Chốt phong bì hiện tại (tự động khi im lặng, hoặc người dùng bấm mic).
-  Future<void> cutSegment() async {
-    if (_useStt) {
-      if (_active && _stt.isListening) await _stt.stop(); // kết quả cuối sẽ tới ngay
+  void _onError(SpeechRecognitionError e) {
+    _log.warning('speech error ${e.errorMsg}');
+    if (!_sessionOpen) return;
+    final m = e.errorMsg;
+    if (m.contains('permission')) {
+      state.value = RecState.denied;
       return;
     }
-    if (!_active || _cutting) return;
-    _cutting = true;
-    try {
-      final path = await _rec.stop();
-      await _ampSub?.cancel();
-      _ampSub = null;
-      final durMs = DateTime.now().difference(_segStart).inMilliseconds;
-      final usable =
-          path != null && _hadSpeech && durMs >= AppConfig.minSegmentMs;
-      if (usable) {
-        await _submit(path, durMs);
-      } else if (path != null) {
-        _deleteFile(path); // chỉ có tiếng ồn / quá ngắn
-      }
-      if (_active) await _beginSegment();
-    } catch (e, st) {
-      _log.error('cut segment failed', e, st);
-    } finally {
-      _cutting = false;
+    if (m == 'error_no_match' || m == 'error_speech_timeout') {
+      return; // lượt rỗng: onStatus sẽ chuyển sang "sẵn sàng", không tự lặp
+    }
+    if (m.contains('network')) {
+      banner.value = 'rec_err_network_stt'.tr;
+    } else if (m.contains('busy') || m.contains('client')) {
+      banner.value = 'rec_err_listen'.tr;
+    } else if (m.contains('language')) {
+      banner.value = 'rec_err_no_vi'.tr;
+    }
+    // Lỗi khác: onStatus sẽ kết thúc lượt; KHÔNG tự khởi động lại.
+  }
+
+  /// Nút mic: đang nghe -> chốt câu hiện tại; đang rảnh -> bắt đầu lượt mới.
+  Future<void> cutSegment() async {
+    if (!_sessionOpen) return;
+    if (_speech.isListening) {
+      await _speech.stop(); // final tới ngay; onStatus xử lý tiếp
+      return;
+    }
+    if (state.value == RecState.idle || state.value == RecState.error) {
+      if (!_speechReady && !await _initSpeech()) return;
+      _policy.userStartedTurn();
+      await _listenTurn();
     }
   }
 
-  /// Dừng phiên; chờ các lượt đang xử lý rồi trả về.
+  void _pauseListening() {
+    _generation++;
+    _flushTimer?.cancel();
+    _speech.cancel();
+    level.value = 0;
+    speaking.value = false;
+    if (state.value == RecState.listening) state.value = RecState.idle;
+  }
+
+  /// Rời màn hình: tắt mic ngay, không chờ gì.
+  void abort() {
+    _sessionOpen = false;
+    _generation++;
+    _flushTimer?.cancel();
+    try {
+      _speech.cancel();
+    } catch (_) {}
+    liveText.value = '';
+    level.value = 0;
+    speaking.value = false;
+    if (state.value != RecState.denied) state.value = RecState.idle;
+  }
+
+  /// Kết thúc phiên: chốt câu đang nói, chờ các lượt đang xử lý rồi trả về.
   Future<void> stopSession({bool auto = false}) async {
     if (state.value == RecState.stopping) return;
-    final wasActive = _active;
     state.value = RecState.stopping;
-    _active = false;
-    if (_useStt) {
-      try {
-        await _stt.stop();
-        await Future.delayed(const Duration(milliseconds: 900)); // chờ kết quả cuối
-      } catch (_) {}
-      liveText.value = '';
-    }
+    _flushTimer?.cancel();
     try {
-      await _ampSub?.cancel();
-      _ampSub = null;
-      if (wasActive && !_cutting) {
-        final path = await _rec.stop();
-        final durMs = DateTime.now().difference(_segStart).inMilliseconds;
-        if (path != null && _hadSpeech && durMs >= AppConfig.minSegmentMs) {
-          await _submit(path, durMs);
-        } else if (path != null) {
-          _deleteFile(path);
-        }
+      if (_speech.isListening) {
+        await _speech.stop();
+        await Future.delayed(const Duration(milliseconds: 700));
       }
+      _tracker.flush();
     } catch (e, st) {
       _log.error('stop failed', e, st);
     }
+    _sessionOpen = false;
+    _generation++;
+    liveText.value = '';
     level.value = 0;
     speaking.value = false;
-    // Chờ upload còn dang dở (tối đa 40s) để màn kết quả có số liệu đầy đủ.
+    // Chờ AI xử lý nốt (tối đa 40s) để màn kết quả có số liệu đầy đủ.
     await _queue.timeout(const Duration(seconds: 40), onTimeout: () {});
     state.value = RecState.idle;
   }
 
-  void _teardown() {
-    _active = false;
-    _stt.cancel();
-    _ampSub?.cancel();
-    _rec.stop().catchError((_) => null);
-  }
+  // --------------------------------------------------------- AI + lưu
 
-  // ------------------------------------------------------------- upload
-
-  Future<void> _submit(String path, int durMs) async {
-    final ev = _event!;
-    final id = _uuid.v4(); // = client_request_id (idempotent)
-    var g = GiftRecord(
-      id: id,
-      eventId: ev.id,
-      status: GiftStatus.processing,
-      source: GiftSource.voice,
-      side: side.value,
-    );
-    await _repo.save(g, enqueue: false); // chưa đẩy lên server
-    items.insert(0, g);
-    _audio[id] = _Pending(path, durMs);
-    _enqueue(id);
-  }
-
-  /// Văn bản đã nhận dạng trên máy -> 1 phong bì (không cần audio).
+  /// Câu hoàn chỉnh từ nhận dạng giọng nói -> một phong bì mới (đang xử lý).
   Future<void> _submitText(String text) async {
     final ev = _event;
     if (ev == null) return;
-    final id = _uuid.v4();
+    _turnHadUtterance = true;
     final g = GiftRecord(
-      id: id,
+      id: _uuid.v4(), // = request_id (idempotent) = id bản ghi
       eventId: ev.id,
       status: GiftStatus.processing,
       source: GiftSource.voice,
       side: side.value,
-      transcript: text,
+      transcript: text, // giữ nguyên transcript kể cả khi backend lỗi
     );
-    await _repo.save(g, enqueue: false);
+    await _repo.save(g, enqueue: false); // chưa tính vào tổng, chưa đồng bộ
     items.insert(0, g);
-    _audio[id] = _Pending('', 1500, text: text);
-    _enqueue(id);
+    _enqueue(g.id);
   }
 
   void _enqueue(String id) {
@@ -411,94 +347,80 @@ class RecordingController extends GetxController with WidgetsBindingObserver {
   }
 
   Future<void> _process(String id) async {
-    final pend = _audio[id];
-    if (pend == null) return;
     final idx = items.indexWhere((x) => x.id == id);
     if (idx < 0) return;
-    var g = items[idx];
+    final g = items[idx];
+    final text = (g.transcript ?? '').trim();
+    if (text.isEmpty) return;
     if (!await AscConnectivity.isOnline()) {
-      await _fail(g, 'err_offline'.tr, keepAudio: true);
+      await _fail(g, 'err_offline'.tr);
       banner.value = 'err_offline'.tr;
       return;
     }
+    ParsedGift parsed;
     try {
-      final r = await _api.uploadVoiceSegment(
-        filePath: pend.text == null ? pend.path : null,
-        transcriptText: pend.text,
+      parsed = await _api.parseGift(
         eventId: g.eventId,
         requestId: id,
-        durationMs: pend.durationMs,
-        side: g.side,
+        text: text,
       );
       banner.value = null;
-      await _apply(g, r);
-      _audio.remove(id);
-      _deleteFile(pend.path); // mặc định không giữ audio lâu dài
     } on NetworkException {
-      await _fail(g, 'err_network'.tr, keepAudio: true);
+      await _fail(g, 'err_network'.tr);
       banner.value = 'err_network'.tr;
+      return;
     } on ApiException catch (e) {
       if (e.isQuota) {
         banner.value = 'err_quota'.tr;
-        await _fail(g, 'err_quota'.tr, keepAudio: true);
+        await _fail(g, 'err_quota'.tr);
       } else {
-        await _fail(g, e.message, keepAudio: e.status >= 500);
-        if (e.status < 500) {
-          _audio.remove(id);
-          _deleteFile(pend.path);
-        }
+        await _fail(g, e.message);
       }
+      return;
     } catch (e, st) {
-      _log.error('process failed', e, st);
-      await _fail(g, 'err_generic'.tr, keepAudio: true);
+      _log.error('parse failed', e, st);
+      await _fail(g, 'err_generic'.tr);
+      return;
+    }
+    try {
+      await _apply(g, parsed);
+    } catch (e, st) {
+      // AI xong nhưng lưu local lỗi: không cộng tiền, cho thử lại cùng request_id.
+      _log.error('save after parse failed', e, st);
+      await _fail(g, 'err_generic'.tr);
     }
   }
 
-  Future<void> _apply(GiftRecord g, VoiceSegmentResult r) async {
-    final name = (r.guestName ?? '').trim();
-    final amount = r.amountVnd ?? 0;
-    final warnings = [...r.warnings];
-    var status = GiftStatus.fromWire(r.state);
-    if (r.state == 'failed') status = GiftStatus.failed;
-
-    // Phòng thủ phía client: không bao giờ tự confirm khi mơ hồ (BR04/05/06).
-    if (status == GiftStatus.confirmed) {
-      final dup = r.duplicateGiftIds.isNotEmpty ||
-          warnings.contains('possible_duplicate');
-      final bad = name.isEmpty ||
-          amount <= 0 ||
-          amount > AppConfig.maxAmountVnd ||
-          warnings.contains('needs_review');
-      if (dup || bad) status = GiftStatus.pendingReview;
-    }
-    if (status == GiftStatus.pendingReview && amount <= 0) {
-      warnings.add('amount_unclear');
-    }
-
-    final updated = g.copyWith(
-      guestName: name.isEmpty ? '' : name,
-      relationship: (r.relationship ?? '').trim().isEmpty
-          ? null
-          : r.relationship!.trim(),
-      amountVnd: amount,
-      status: status,
-      transcript: r.transcript,
-      warnings: warnings,
-      errorMessage: status == GiftStatus.failed ? 'err_no_speech'.tr : null,
+  Future<void> _apply(GiftRecord g, ParsedGift p) async {
+    final decision = decideSave(
+      p,
+      autoSaveEnabled: _settings.autoSave.value,
+      maxAmountVnd: AppConfig.maxAmountVnd,
     );
-    // Server đã lưu bản ghi này (idempotent) -> chỉ đánh dấu synced, không
-    // cần đẩy lại; local ghi enqueue=false để khỏi PUT trùng.
-    await _repo.save(updated, enqueue: false);
-    await _repo.markSynced(updated.id, updated.updatedAt);
+    final warnings = [...p.warnings];
+    if (p.possibleDuplicate && !warnings.contains('possible_duplicate')) {
+      warnings.add('possible_duplicate');
+    }
+    final updated = g.copyWith(
+      guestName: p.guestName ?? '',
+      relationship: p.relationship,
+      amountVnd: p.amount ?? 0,
+      status: decision == SaveDecision.autoSave
+          ? GiftStatus.confirmed
+          : GiftStatus.pendingReview,
+      warnings: warnings,
+      errorMessage: null,
+    );
+    // enqueue=true: đồng bộ lên server qua PUT /v1/gifts/:id (id = request_id).
+    await _repo.save(updated);
     _replace(updated);
     await _gifts.reload();
   }
 
-  Future<void> _fail(GiftRecord g, String msg, {bool keepAudio = false}) async {
+  Future<void> _fail(GiftRecord g, String msg) async {
     final f = g.copyWith(status: GiftStatus.failed, errorMessage: msg);
-    await _repo.save(f, enqueue: false);
+    await _repo.save(f, enqueue: false); // lỗi: không đồng bộ, không cộng tiền
     _replace(f);
-    if (!keepAudio) _audio.remove(g.id);
   }
 
   void _replace(GiftRecord g) {
@@ -507,10 +429,11 @@ class RecordingController extends GetxController with WidgetsBindingObserver {
     items.refresh();
   }
 
+  /// Còn transcript thì thử lại được, kể cả khi đã rời màn hình ghi âm.
   bool canRetry(GiftRecord g) =>
-      g.status == GiftStatus.failed && _audio.containsKey(g.id);
+      g.status == GiftStatus.failed && (g.transcript ?? '').trim().isNotEmpty;
 
-  /// Thử lại với CÙNG request_id -> backend không tạo bản ghi thứ 2.
+  /// Thử lại với CÙNG request_id -> backend không gọi AI/tạo bản ghi lần 2.
   Future<void> retry(GiftRecord g) async {
     if (!canRetry(g)) return;
     final p = g.copyWith(status: GiftStatus.processing, errorMessage: null);
@@ -542,7 +465,6 @@ class RecordingController extends GetxController with WidgetsBindingObserver {
   Future<void> undoItem(GiftRecord g) async {
     await _gifts.delete(g.id);
     items.removeWhere((x) => x.id == g.id);
-    _audio.remove(g.id);
   }
 
   // ------------------------------------------------------------ summary
@@ -567,22 +489,35 @@ class RecordingController extends GetxController with WidgetsBindingObserver {
       final k = g.guestName.trim().toLowerCase();
       if (k.isEmpty) continue;
       final cur = m[k];
-      m[k] = (name: cur?.name ?? g.guestName.trim(), amount: (cur?.amount ?? 0) + g.amountVnd);
+      m[k] = (
+        name: cur?.name ?? g.guestName.trim(),
+        amount: (cur?.amount ?? 0) + g.amountVnd,
+      );
     }
     final l = m.values.toList()..sort((a, b) => b.amount.compareTo(a.amount));
     return l.take(5).toList();
   }
 
-  void _deleteFile(String path) {
-    try {
-      File(path).deleteSync();
-    } catch (_) {}
+  /// Trạng thái hiển thị cho người dùng: Sẵn sàng / Đang nghe / Đang xử lý AI /
+  /// Đã lưu / Cần kiểm tra / Lỗi.
+  String get statusKey {
+    if (state.value == RecState.error || state.value == RecState.denied) {
+      return 'rec_status_error';
+    }
+    if (state.value == RecState.listening) return 'rec_status_listening';
+    if (processingCount > 0) return 'rec_status_processing';
+    if (items.isNotEmpty) {
+      switch (items.first.status) {
+        case GiftStatus.confirmed:
+          return 'rec_status_saved';
+        case GiftStatus.pendingReview:
+          return 'rec_status_review';
+        case GiftStatus.failed:
+          return 'rec_status_error';
+        case GiftStatus.processing:
+          return 'rec_status_processing';
+      }
+    }
+    return 'rec_status_ready';
   }
-}
-
-class _Pending {
-  _Pending(this.path, this.durationMs, {this.text});
-  final String path;
-  final int durationMs;
-  final String? text;
 }

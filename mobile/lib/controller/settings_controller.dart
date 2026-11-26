@@ -14,6 +14,9 @@ class SettingsController extends GetxController {
   final RxString accountEmail = ''.obs;
   final RxBool autoSilenceCut = true.obs;
   final RxInt silenceMs = 1600.obs;
+
+  /// Tự lưu khi AI đọc rõ ràng (tên + số tiền, không nghi trùng).
+  final RxBool autoSave = true.obs;
   final Rx<Locale> locale = const Locale('vi', 'VN').obs;
 
   Future<SettingsController> init() async {
@@ -22,13 +25,15 @@ class SettingsController extends GetxController {
     accountEmail.value = _p.getString(PrefConst.accountEmail) ?? '';
     autoSilenceCut.value = _p.getBool(PrefConst.autoSilenceCut) ?? true;
     silenceMs.value = _p.getInt(PrefConst.silenceMs) ?? 1600;
+    autoSave.value = _p.getBool(PrefConst.autoSave) ?? true;
     locale.value = AscLocale.getAppLocale();
     return this;
   }
 
   bool get onboardingSeen => _p.getBool(PrefConst.onboardingSeen) ?? false;
 
-  Future<void> markOnboardingSeen() => _p.setBool(PrefConst.onboardingSeen, true);
+  Future<void> markOnboardingSeen() =>
+      _p.setBool(PrefConst.onboardingSeen, true);
 
   String? get activeEventId => _p.getString(PrefConst.activeEventId);
 
@@ -64,6 +69,11 @@ class SettingsController extends GetxController {
   Future<void> setAutoSilenceCut(bool v) async {
     autoSilenceCut.value = v;
     await _p.setBool(PrefConst.autoSilenceCut, v);
+  }
+
+  Future<void> setAutoSave(bool v) async {
+    autoSave.value = v;
+    await _p.setBool(PrefConst.autoSave, v);
   }
 
   Future<void> setSilenceMs(int v) async {

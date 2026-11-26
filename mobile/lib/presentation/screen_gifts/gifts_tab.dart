@@ -47,7 +47,8 @@ class _GiftsTabState extends State<GiftsTab> {
     if (g.status == GiftStatus.pendingReview || g.status == GiftStatus.failed) {
       showReviewSheet(
         g,
-        onConfirm: (n, a, r) => c.confirm(g, name: n, amount: a, relationship: r),
+        onConfirm: (n, a, r) =>
+            c.confirm(g, name: n, amount: a, relationship: r),
         onDelete: () async {
           await c.delete(g.id);
           Toast.show('deleted'.tr);
@@ -69,7 +70,8 @@ class _GiftsTabState extends State<GiftsTab> {
               padding: const EdgeInsets.fromLTRB(20, 18, 20, 6),
               child: Text(
                 'filter_status'.tr,
-                style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800),
+                style:
+                    const TextStyle(fontSize: 17, fontWeight: FontWeight.w800),
               ),
             ),
             for (final o in <(String, GiftStatus?)>[
@@ -236,7 +238,8 @@ class _GiftsTabState extends State<GiftsTab> {
                           showCheckmark: false,
                           selectedColor: AppColors.chip,
                           side: BorderSide.none,
-                          avatar: const Icon(Icons.view_agenda_outlined, size: 16),
+                          avatar:
+                              const Icon(Icons.view_agenda_outlined, size: 16),
                         ),
                       ),
                       const SizedBox(width: 8),
@@ -318,7 +321,8 @@ class _GiftsTabState extends State<GiftsTab> {
                   foregroundColor: AppColors.primary,
                   elevation: 1,
                   shape: const CircleBorder(),
-                  onPressed: () => _guardEvent(() => Get.toNamed(RouteName.giftEdit)),
+                  onPressed: () =>
+                      _guardEvent(() => Get.toNamed(RouteName.giftEdit)),
                   child: const Icon(Icons.edit_note_rounded),
                 ),
                 const SizedBox(height: 10),
@@ -387,21 +391,22 @@ class _GiftsTabState extends State<GiftsTab> {
   }
 
   Widget _chip(String label, bool selected, VoidCallback onTap) => Padding(
-    padding: const EdgeInsets.only(right: 8),
-    child: ChoiceChip(
-      label: Text(label),
-      selected: selected,
-      onSelected: (_) => onTap(),
-      showCheckmark: false,
-      selectedColor: AppColors.primary,
-      backgroundColor: AppColors.chip,
-      side: BorderSide.none,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      labelStyle: TextStyle(
-        color: selected ? Colors.white : AppColors.primary,
-        fontWeight: FontWeight.w700,
-        fontSize: 13,
-      ),
-    ),
-  );
+        padding: const EdgeInsets.only(right: 8),
+        child: ChoiceChip(
+          label: Text(label),
+          selected: selected,
+          onSelected: (_) => onTap(),
+          showCheckmark: false,
+          selectedColor: AppColors.primary,
+          backgroundColor: AppColors.chip,
+          side: BorderSide.none,
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          labelStyle: TextStyle(
+            color: selected ? Colors.white : AppColors.primary,
+            fontWeight: FontWeight.w700,
+            fontSize: 13,
+          ),
+        ),
+      );
 }

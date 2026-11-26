@@ -14,18 +14,18 @@ class AppTheme {
       error: AppColors.danger,
     );
     OutlineInputBorder border(Color c) => OutlineInputBorder(
-      borderRadius: BorderRadius.circular(14),
-      borderSide: BorderSide(color: c),
-    );
+          borderRadius: BorderRadius.circular(14),
+          borderSide: BorderSide(color: c),
+        );
     return ThemeData(
       useMaterial3: true,
       colorScheme: scheme,
       scaffoldBackgroundColor: AppColors.background,
       canvasColor: AppColors.background,
       textTheme: ThemeData.light().textTheme.apply(
-        bodyColor: AppColors.text,
-        displayColor: AppColors.text,
-      ),
+            bodyColor: AppColors.text,
+            displayColor: AppColors.text,
+          ),
       appBarTheme: const AppBarTheme(
         backgroundColor: Colors.transparent,
         elevation: 0,

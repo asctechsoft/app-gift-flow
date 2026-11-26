@@ -29,17 +29,21 @@ class OutboxRepository {
     DatabaseExecutor? txn,
   }) async {
     final ex = txn ?? await _db;
-    await ex.insert('outbox', {
-      'entity': entity,
-      'entity_id': entityId,
-      'action': action,
-      'created_at': DateTime.now().millisecondsSinceEpoch,
-      'attempts': 0,
-    }, conflictAlgorithm: ConflictAlgorithm.replace);
+    await ex.insert(
+        'outbox',
+        {
+          'entity': entity,
+          'entity_id': entityId,
+          'action': action,
+          'created_at': DateTime.now().millisecondsSinceEpoch,
+          'attempts': 0,
+        },
+        conflictAlgorithm: ConflictAlgorithm.replace);
   }
 
   /// Sự kiện đẩy trước (gift tham chiếu event), rồi theo thứ tự thời gian.
-  Future<List<OutboxItem>> pending({int limit = 50, int maxAttempts = 6}) async {
+  Future<List<OutboxItem>> pending(
+      {int limit = 50, int maxAttempts = 6}) async {
     final rows = await (await _db).query(
       'outbox',
       where: 'attempts < ?',
@@ -69,9 +73,9 @@ class OutboxRepository {
       (await _db).delete('outbox', where: 'id = ?', whereArgs: [id]);
 
   Future<void> markFailed(int id, String error) async => (await _db).rawUpdate(
-    'UPDATE outbox SET attempts = attempts + 1, last_error = ? WHERE id = ?',
-    [error, id],
-  );
+        'UPDATE outbox SET attempts = attempts + 1, last_error = ? WHERE id = ?',
+        [error, id],
+      );
 
   /// Cho phép thử lại những dòng đã vượt ngưỡng (nút "Đồng bộ ngay").
   Future<void> resetAttempts() async =>
