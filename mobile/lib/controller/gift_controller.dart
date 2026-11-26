@@ -26,6 +26,9 @@ class GiftController extends GetxController {
   final Rxn<GiftStatus> statusFilter = Rxn<GiftStatus>();
   final RxBool loading = false.obs;
 
+  /// Tiền đã xác nhận thêm trong hôm nay của sự kiện đang chọn (thẻ tăng trưởng ở Trang chủ).
+  final RxInt todayVnd = 0.obs;
+
   String? get eventId => _events.active.value?.id;
 
   @override
@@ -51,6 +54,7 @@ class GiftController extends GetxController {
     if (id == null) {
       gifts.clear();
       relCounts.clear();
+      todayVnd.value = 0;
       stats.value = EventStats.empty();
       return;
     }
@@ -74,6 +78,11 @@ class GiftController extends GetxController {
       relCounts.assignAll(
           await _repo.relationshipCounts(id, side: sideFilter.value));
       stats.value = await _repo.stats(id);
+      final now = DateTime.now();
+      todayVnd.value = await _repo.confirmedSince(
+        id,
+        DateTime(now.year, now.month, now.day),
+      );
       _events.refreshTotals();
     } finally {
       loading.value = false;

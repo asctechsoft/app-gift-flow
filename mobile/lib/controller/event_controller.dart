@@ -24,6 +24,9 @@ class EventController extends GetxController {
   /// Tổng tiền confirmed theo từng sự kiện (hiển thị ở danh sách sự kiện).
   final RxMap<String, int> totals = <String, int>{}.obs;
 
+  /// Thống kê đầy đủ theo từng sự kiện (số phong bì, số khách, tổng tiền).
+  final RxMap<String, EventStats> statsById = <String, EventStats>{}.obs;
+
   @override
   void onInit() {
     super.onInit();
@@ -95,9 +98,13 @@ class EventController extends GetxController {
 
   Future<void> refreshTotals() async {
     final m = <String, int>{};
+    final all = <String, EventStats>{};
     for (final e in events) {
-      m[e.id] = (await _giftRepo.stats(e.id)).totalVnd;
+      final st = await _giftRepo.stats(e.id);
+      m[e.id] = st.totalVnd;
+      all[e.id] = st;
     }
     totals.assignAll(m);
+    statsById.assignAll(all);
   }
 }

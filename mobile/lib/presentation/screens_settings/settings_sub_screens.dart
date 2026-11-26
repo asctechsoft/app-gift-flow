@@ -490,3 +490,74 @@ class AboutScreen extends StatelessWidget {
         ),
       );
 }
+
+class _DocScreen extends StatelessWidget {
+  const _DocScreen({required this.titleKey, required this.sections});
+  final String titleKey;
+  final List<(String, String)> sections;
+
+  @override
+  Widget build(BuildContext context) => GradientScaffold(
+    appBar: AppHeader(title: titleKey.tr),
+    body: SafeArea(
+      child: ListView(
+        padding: const EdgeInsets.fromLTRB(20, 4, 20, 24),
+        children: [
+          for (final s in sections) ...[
+            SoftCard(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    s.$1.tr,
+                    style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    s.$2.tr,
+                    style: const TextStyle(
+                      color: AppColors.textSecondary,
+                      height: 1.45,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+          ],
+        ],
+      ),
+    ),
+  );
+}
+
+/// Quyền riêng tư.
+class PrivacyScreen extends StatelessWidget {
+  const PrivacyScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) => const _DocScreen(
+    titleKey: 'privacy_title',
+    sections: [
+      ('privacy_s1_t', 'privacy_s1_b'),
+      ('privacy_s2_t', 'privacy_s2_b'),
+      ('privacy_s3_t', 'privacy_s3_b'),
+      ('privacy_s4_t', 'privacy_s4_b'),
+    ],
+  );
+}
+
+/// Điều khoản sử dụng.
+class TermsScreen extends StatelessWidget {
+  const TermsScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) => const _DocScreen(
+    titleKey: 'terms_title',
+    sections: [
+      ('terms_s1_t', 'terms_s1_b'),
+      ('terms_s2_t', 'terms_s2_b'),
+      ('terms_s3_t', 'terms_s3_b'),
+    ],
+  );
+}

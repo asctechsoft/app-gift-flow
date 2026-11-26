@@ -10,6 +10,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'configs/pref_const.dart';
 import 'controller/event_controller.dart';
+import 'controller/gift_list_controller.dart';
 import 'controller/gift_controller.dart';
 import 'controller/recording_controller.dart';
 import 'controller/settings_controller.dart';
@@ -87,6 +88,10 @@ Future<void> _setupDependencies() async {
   final giftC = Get.put(GiftController(gifts, eventC, sync), permanent: true);
   Get.put(
     RecordingController(api, gifts, eventC, giftC, settings),
+    permanent: true,
+  );
+  Get.put(
+    GiftListController(gifts, giftC, eventC, sync),
     permanent: true,
   );
   Get.put(GoogleAuthService(api, settings, sync), permanent: true);

@@ -10,7 +10,7 @@ import {
   MinLength,
 } from 'class-validator';
 
-export const EVENT_TYPES = ['wedding', 'engagement', 'housewarming', 'other'];
+export const EVENT_TYPES = ['wedding', 'engagement', 'birthday', 'housewarming', 'baby_month', 'other'];
 export const EVENT_STATUSES = ['active', 'closed'];
 
 export class CreateEventDto {

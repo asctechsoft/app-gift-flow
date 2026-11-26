@@ -1,3 +1,5 @@
+enum EventPhase { ongoing, upcoming, ended }
+
 /// Sự kiện (đám cưới, lễ ăn hỏi...). Tiền mừng luôn thuộc đúng 1 sự kiện.
 class GiftEvent {
   GiftEvent({
@@ -32,6 +34,20 @@ class GiftEvent {
   final bool synced;
 
   bool get isClosed => status == 'closed';
+
+  /// Đang diễn ra / Sắp diễn ra / Đã kết thúc (suy ra từ ngày + trạng thái đóng).
+  EventPhase phaseOn(DateTime now) {
+    if (isClosed) return EventPhase.ended;
+    final d = DateTime.tryParse(eventDate);
+    if (d == null) return EventPhase.ongoing;
+    final today = DateTime(now.year, now.month, now.day);
+    final day = DateTime(d.year, d.month, d.day);
+    if (day.isAfter(today)) return EventPhase.upcoming;
+    // Còn nhận phong bì tới 7 ngày sau lễ.
+    return today.difference(day).inDays <= 7
+        ? EventPhase.ongoing
+        : EventPhase.ended;
+  }
 
   GiftEvent copyWith({
     String? name,

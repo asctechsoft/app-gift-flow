@@ -1,5 +1,6 @@
 import 'package:get/get.dart';
 
+import '../presentation/screen_events/event_detail_screen.dart';
 import '../presentation/screen_events/event_edit_screen.dart';
 import '../presentation/screen_export/export_screen.dart';
 import '../presentation/screen_gifts/gift_edit_screen.dart';
@@ -41,6 +42,9 @@ class AppPages {
     ),
     GetPage(name: RouteName.giftEdit, page: () => const GiftEditScreen()),
     GetPage(name: RouteName.eventEdit, page: () => const EventEditScreen()),
+    GetPage(name: RouteName.eventDetail, page: () => const EventDetailScreen()),
+    GetPage(name: RouteName.privacy, page: () => const PrivacyScreen()),
+    GetPage(name: RouteName.terms, page: () => const TermsScreen()),
     GetPage(name: RouteName.statistics, page: () => const StatisticsScreen()),
     GetPage(name: RouteName.export, page: () => const ExportScreen()),
     GetPage(name: RouteName.profile, page: () => const ProfileScreen()),

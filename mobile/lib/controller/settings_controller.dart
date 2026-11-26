@@ -71,6 +71,17 @@ class SettingsController extends GetxController {
     await _p.setBool(PrefConst.autoSilenceCut, v);
   }
 
+  /// Số phong bì dự kiến của một sự kiện (thanh tiến độ). Lưu cục bộ trên máy.
+  int expectedFor(String eventId) => _p.getInt('expected_$eventId') ?? 0;
+
+  Future<void> setExpected(String eventId, int n) async {
+    if (n <= 0) {
+      await _p.remove('expected_$eventId');
+    } else {
+      await _p.setInt('expected_$eventId', n);
+    }
+  }
+
   Future<void> setAutoSave(bool v) async {
     autoSave.value = v;
     await _p.setBool(PrefConst.autoSave, v);

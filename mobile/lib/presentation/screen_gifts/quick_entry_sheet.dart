@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../../configs/app_config.dart';
 import '../../controller/gift_controller.dart';
@@ -13,8 +14,9 @@ import '../common_components/dialogs.dart';
 import '../common_components/money_input_formatter.dart';
 
 /// Nhập nhanh: tên + chip số tiền + nhóm + quan hệ, "Lưu & thêm tiếp" - không cần mở mic.
-Future<void> showQuickEntry({String? initialSide}) => Get.bottomSheet(
-      QuickEntrySheet(initialSide: initialSide),
+Future<void> showQuickEntry({String? initialSide, ImageSource? scanSource}) =>
+    Get.bottomSheet(
+      QuickEntrySheet(initialSide: initialSide, scanSource: scanSource),
       isScrollControlled: true,
       backgroundColor: AppColors.surface,
       shape: const RoundedRectangleBorder(
@@ -23,8 +25,11 @@ Future<void> showQuickEntry({String? initialSide}) => Get.bottomSheet(
     );
 
 class QuickEntrySheet extends StatefulWidget {
-  const QuickEntrySheet({super.key, this.initialSide});
+  const QuickEntrySheet({super.key, this.initialSide, this.scanSource});
   final String? initialSide;
+
+  /// Mở sheet là quét luôn (camera hoặc thư viện ảnh).
+  final ImageSource? scanSource;
 
   @override
   State<QuickEntrySheet> createState() => _QuickEntrySheetState();
@@ -66,10 +71,20 @@ class _QuickEntrySheetState extends State<QuickEntrySheet> {
     });
   }
 
-  Future<void> _scan() async {
+  @override
+  void initState() {
+    super.initState();
+    if (widget.scanSource != null) {
+      WidgetsBinding.instance.addPostFrameCallback(
+        (_) => _scan(source: widget.scanSource!),
+      );
+    }
+  }
+
+  Future<void> _scan({ImageSource source = ImageSource.camera}) async {
     setState(() => _scanning = true);
     try {
-      final r = await EnvelopeScanner().scan();
+      final r = await EnvelopeScanner().scan(source: source);
       if (r == null) return;
       if (r.lines.isEmpty && r.amountVnd == null) {
         Toast.show('scan_none'.tr);

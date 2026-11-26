@@ -7,7 +7,9 @@ import '../../utils/date_fmt.dart';
 import '../../utils/toast_utils.dart';
 import '../../values/app_colors.dart';
 import '../../values/route_name.dart';
+import '../../controller/settings_controller.dart';
 import '../common_components/components.dart';
+import '../common_components/ui_kit.dart';
 
 /// X01 - Tạo / sửa sự kiện. Với lần đầu (`first`) điều hướng sang Home sau khi tạo.
 class EventEditScreen extends StatefulWidget {
@@ -18,16 +20,11 @@ class EventEditScreen extends StatefulWidget {
 }
 
 class _EventEditScreenState extends State<EventEditScreen> {
-  static const _types = [
-    ('wedding', 'type_wedding'),
-    ('engagement', 'type_engagement'),
-    ('housewarming', 'type_housewarming'),
-    ('other', 'type_other'),
-  ];
-
   final EventController _c = Get.find<EventController>();
   final TextEditingController _name = TextEditingController();
   final TextEditingController _loc = TextEditingController();
+  final TextEditingController _expected = TextEditingController();
+  final SettingsController _settings = Get.find<SettingsController>();
   late final Map<String, dynamic> _args =
       (Get.arguments as Map?)?.cast<String, dynamic>() ?? {};
   GiftEvent? _editing;
@@ -49,6 +46,8 @@ class _EventEditScreenState extends State<EventEditScreen> {
         _name.text = e.name;
         _loc.text = e.location ?? '';
         _type = e.type;
+        final n = _settings.expectedFor(e.id);
+        if (n > 0) _expected.text = '$n';
         _date = DateTime.tryParse(e.eventDate) ?? DateTime.now();
       }
     }
@@ -58,6 +57,7 @@ class _EventEditScreenState extends State<EventEditScreen> {
   void dispose() {
     _name.dispose();
     _loc.dispose();
+    _expected.dispose();
     super.dispose();
   }
 
@@ -82,12 +82,16 @@ class _EventEditScreenState extends State<EventEditScreen> {
       _saving = true;
     });
     try {
-      await _c.save(
+      final saved = await _c.save(
         id: _editing?.id,
         name: name,
         type: _type,
         eventDate: DateFmt.iso(_date),
         location: _loc.text,
+      );
+      await _settings.setExpected(
+        saved.id,
+        int.tryParse(_expected.text.trim()) ?? 0,
       );
       Toast.show('saved'.tr);
       if (_first) {
@@ -134,18 +138,20 @@ class _EventEditScreenState extends State<EventEditScreen> {
                   spacing: 8,
                   runSpacing: 4,
                   children: [
-                    for (final t in _types)
+                    for (final t in EventTypeInfo.all)
                       ChoiceChip(
-                        label: Text(t.$2.tr),
-                        selected: _type == t.$1,
-                        onSelected: (_) => setState(() => _type = t.$1),
+                        avatar: Text(t.emoji),
+                        label: Text(t.labelKey.tr),
+                        selected: _type == t.type,
+                        onSelected: (_) => setState(() => _type = t.type),
                         showCheckmark: false,
                         selectedColor: AppColors.primary,
                         backgroundColor: AppColors.chip,
                         side: BorderSide.none,
                         labelStyle: TextStyle(
-                          color:
-                              _type == t.$1 ? Colors.white : AppColors.primary,
+                          color: _type == t.type
+                              ? Colors.white
+                              : AppColors.primary,
                           fontWeight: FontWeight.w700,
                         ),
                       ),
@@ -172,6 +178,13 @@ class _EventEditScreenState extends State<EventEditScreen> {
                   controller: _loc,
                   icon: Icons.place_outlined,
                   hint: 'event_location_hint'.tr,
+                ),
+                FieldLabel('event_expected'.tr),
+                IconField(
+                  controller: _expected,
+                  icon: Icons.mail_outline_rounded,
+                  hint: 'event_expected_hint'.tr,
+                  keyboardType: TextInputType.number,
                 ),
                 const SizedBox(height: 28),
                 PrimaryButton(

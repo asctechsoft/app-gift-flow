@@ -10,6 +10,9 @@ class RouteName {
   static const String statistics = '/statistics';
   static const String export = '/export';
   static const String eventEdit = '/event-edit'; // X01
+  static const String eventDetail = '/event-detail';
+  static const String privacy = '/settings/privacy';
+  static const String terms = '/settings/terms';
   static const String profile = '/settings/profile';
   static const String recordingOptions = '/settings/recording';
   static const String backup = '/settings/backup'; // X07

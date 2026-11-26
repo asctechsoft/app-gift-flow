@@ -1,4 +1,5 @@
 import 'package:sqflite/sqflite.dart';
+import 'gift_filter.dart';
 
 import '../configs/app_config.dart';
 import '../models/data_models/gift_record.dart';
@@ -332,6 +333,155 @@ class GiftRepository {
   }
 
   /// Upsert từ server (khôi phục) - không xếp hàng đồng bộ lại.
+  // ------------------------------------------------ danh sách toàn bộ (UI mới)
+
+  /// Tìm trên TẤT CẢ sự kiện (hoặc một sự kiện nếu [GiftFilter.eventId]) kèm thông tin sự kiện.
+  Future<List<GiftWithEvent>> search(GiftFilter f, {int limit = 2000}) async {
+    final where = <String>['g.deleted_at IS NULL', 'e.deleted_at IS NULL'];
+    final args = <Object?>[];
+    if (f.eventId != null) {
+      where.add('g.event_id = ?');
+      args.add(f.eventId);
+    }
+    final q = TextUtils.fold(f.query);
+    if (q.isNotEmpty) {
+      where.add('g.search_key LIKE ?');
+      args.add('%$q%');
+    }
+    if (f.eventType != null) {
+      where.add('e.type = ?');
+      args.add(f.eventType);
+    }
+    if (f.side != null) {
+      where.add('g.side = ?');
+      args.add(f.side);
+    }
+    if (f.relationship != null) {
+      if (f.relationship!.isEmpty) {
+        where.add("(g.relationship IS NULL OR TRIM(g.relationship) = '')");
+      } else {
+        where.add('g.relationship = ?');
+        args.add(f.relationship);
+      }
+    }
+    if (f.status != null) {
+      where.add('g.status = ?');
+      args.add(f.status!.wire);
+    } else {
+      where.add("g.status IN ('confirmed','pending_review','failed')");
+    }
+    if (f.from != null) {
+      where.add('g.created_at >= ?');
+      args.add(DateTime(f.from!.year, f.from!.month, f.from!.day)
+          .millisecondsSinceEpoch);
+    }
+    if (f.to != null) {
+      where.add('g.created_at < ?');
+      args.add(DateTime(f.to!.year, f.to!.month, f.to!.day + 1)
+          .millisecondsSinceEpoch);
+    }
+    if (f.minAmount != null) {
+      where.add('g.amount_vnd >= ?');
+      args.add(f.minAmount);
+    }
+    if (f.maxAmount != null) {
+      where.add('g.amount_vnd <= ?');
+      args.add(f.maxAmount);
+    }
+    final order = switch (f.sort) {
+      GiftSort.newest => 'g.created_at DESC, g.id DESC',
+      GiftSort.oldest => 'g.created_at ASC, g.id ASC',
+      GiftSort.amountDesc => 'g.amount_vnd DESC, g.created_at DESC',
+      GiftSort.amountAsc => 'g.amount_vnd ASC, g.created_at DESC',
+      GiftSort.nameAsc => 'g.search_key ASC, g.created_at DESC',
+    };
+    final rows = await (await _db).rawQuery(
+      '''SELECT g.*, e.name AS event_name, e.type AS event_type
+         FROM gifts g JOIN events e ON e.id = g.event_id
+         WHERE ${where.join(' AND ')}
+         ORDER BY $order
+         LIMIT $limit''',
+      args,
+    );
+    return rows
+        .map(
+          (r) => GiftWithEvent(
+            GiftRecord.fromMap(r),
+            (r['event_name'] as String?) ?? '',
+            (r['event_type'] as String?) ?? 'other',
+          ),
+        )
+        .toList();
+  }
+
+  /// Danh sách khách của một sự kiện (gộp theo tên), nhiều tiền nhất trước.
+  Future<List<GuestSummary>> guests(String eventId, {String query = ''}) async {
+    final args = <Object?>[eventId];
+    var extra = '';
+    final q = TextUtils.fold(query);
+    if (q.isNotEmpty) {
+      extra = 'AND search_key LIKE ?';
+      args.add('%$q%');
+    }
+    final rows = await (await _db).rawQuery(
+      '''SELECT MIN(TRIM(guest_name)) AS n,
+                SUM(CASE WHEN status = 'confirmed' THEN amount_vnd ELSE 0 END) AS s,
+                COUNT(*) AS c,
+                MAX(NULLIF(TRIM(relationship), '')) AS rel,
+                SUM(CASE WHEN status = 'pending_review' THEN 1 ELSE 0 END) AS p
+         FROM gifts
+         WHERE event_id = ? AND deleted_at IS NULL
+               AND status IN ('confirmed','pending_review')
+               AND TRIM(guest_name) <> '' $extra
+         GROUP BY LOWER(TRIM(guest_name))
+         ORDER BY s DESC, n ASC''',
+      args,
+    );
+    return rows
+        .map(
+          (r) => GuestSummary(
+            name: r['n'] as String,
+            totalVnd: (r['s'] as int?) ?? 0,
+            count: (r['c'] as int?) ?? 0,
+            relationship: r['rel'] as String?,
+            pending: (r['p'] as int?) ?? 0,
+          ),
+        )
+        .toList();
+  }
+
+  /// Tiền mừng (đã xác nhận) theo ngày + cộng dồn - cho biểu đồ xu hướng.
+  Future<List<TrendPoint>> trend(String eventId) async {
+    final rows = await (await _db).rawQuery(
+      '''SELECT strftime('%Y-%m-%d', created_at / 1000, 'unixepoch', 'localtime') AS d,
+                SUM(amount_vnd) AS s
+         FROM gifts
+         WHERE event_id = ? AND deleted_at IS NULL AND status = 'confirmed'
+         GROUP BY d ORDER BY d ASC''',
+      [eventId],
+    );
+    var run = 0;
+    final out = <TrendPoint>[];
+    for (final r in rows) {
+      final day = DateTime.parse(r['d'] as String);
+      final v = (r['s'] as int?) ?? 0;
+      run += v;
+      out.add(TrendPoint(day, v, run));
+    }
+    return out;
+  }
+
+  /// Tổng tiền (đã xác nhận) thêm vào từ [since] tới giờ.
+  Future<int> confirmedSince(String eventId, DateTime since) async {
+    final r = await (await _db).rawQuery(
+      '''SELECT COALESCE(SUM(amount_vnd), 0) AS s FROM gifts
+         WHERE event_id = ? AND deleted_at IS NULL AND status = 'confirmed'
+               AND created_at >= ?''',
+      [eventId, since.millisecondsSinceEpoch],
+    );
+    return (r.first['s'] as int?) ?? 0;
+  }
+
   Future<void> upsertFromServer(GiftRecord g) async {
     final d = await _db;
     final cur = await get(g.id);

@@ -59,3 +59,6 @@ app.*.map.json
 /tool/build/build_secrets.json
 /google-services.json
 /GiftFlow_AI_Implementation_Blueprint_v1.docx
+
+# Ảnh chụp từ test/ui_screens_test.dart
+/test/_shots/
