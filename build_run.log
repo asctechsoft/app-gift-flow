@@ -1,0 +1,53 @@
+values: missing []
+values-vi: missing []
+Running Gradle task 'assembleDevRelease'...                     
+Warning: Flutter support for your project's Gradle version (8.14.0) will soon be dropped. Please upgrade your Gradle version to a version of at least 9.1.0 soon.
+Alternatively, use the flag "--android-skip-build-dependency-validation" to bypass this check.
+
+Potential fix: Your project's gradle version is typically defined in the gradle wrapper file. By default, this can be found at D:\App_Start_Up\app-gift-flow\mobile\android/gradle/wrapper/gradle-wrapper.properties. 
+For more information, see https://docs.gradle.org/current/userguide/gradle_wrapper.html.
+
+Warning: Flutter support for your project's Android Gradle Plugin version (Android Gradle Plugin version 8.11.1) will soon be dropped. Please upgrade your Android Gradle Plugin version to a version of at least Android Gradle Plugin version 9.0.1 soon.
+Alternatively, use the flag "--android-skip-build-dependency-validation" to bypass this check.
+
+Potential fix: Your project's AGP version is typically defined in the plugins block of the `settings.gradle` file (D:\App_Start_Up\app-gift-flow\mobile\android/settings.gradle), by a plugin with the id of com.android.application. 
+If you don't see a plugins block, your project was likely created with an older template version. In this case it is most likely defined in the top-level build.gradle file (D:\App_Start_Up\app-gift-flow\mobile\android/build.gradle) by the following line in the dependencies block of the buildscript: "classpath 'com.android.tools.build:gradle:<version>'".
+
+Warning: Flutter support for your project's Kotlin version (2.2.20) will soon be dropped. Please upgrade your Kotlin version to a version of at least 2.3.20 soon.
+Alternatively, use the flag "--android-skip-build-dependency-validation" to bypass this check.
+
+Potential fix: Your project's KGP version is typically defined in the plugins block of the `settings.gradle` file (D:\App_Start_Up\app-gift-flow\mobile\android/settings.gradle), by a plugin with the id of org.jetbrains.kotlin.android. 
+If you don't see a plugins block, your project was likely created with an older template version, in which case it is most likely defined in the top-level build.gradle file (D:\App_Start_Up\app-gift-flow\mobile\android/build.gradle) by the ext.kotlin_version property.
+
+Warning: SDK processing. This version only understands SDK XML versions up to 3 but an SDK XML file of version 4 was encountered. This can happen if you use versions of Android Studio and the command-line tools that were released at different times.
+Font asset "MaterialIcons-Regular.otf" was tree-shaken, reducing it from 1645184 to 21936 bytes (98.7% reduction). Tree-shaking can be disabled by providing the --no-tree-shake-icons flag when building your app.
+Running Gradle task 'assembleDevRelease'...                       328.9s
+√ Built build\app\outputs\flutter-apk\app-dev-release.apk (58.0MB)
+Version 1.1.21+1
+API_BASE_URL = http://192.168.1.4:3000
+Building APK: C:\Users\Asus\AppData\Local\Flutter_sdk\flutter\bin\flutter.BAT build apk --flavor dev --release --build-name 1.1.21 --build-number 1 --target-platform android-arm64 --dart-define=API_BASE_URL=http://192.168.1.4:3000 --dart-define=GOOGLE_SERVER_CLIENT_ID=589252278901-39mqs38nko59hgab3qmj4vlsoaut8p8u.apps.googleusercontent.com
+Uploading build\app\outputs\flutter-apk\app-dev-release.apk to Firebase App Distribution (testers: asctechsoft888@gmail.com)...
+  firebase: [36m[1mi [22m[39m uploading binary...
+  firebase: [32m[1m+ [22m[39m uploaded new release 1.1.21-dev (1) successfully!
+  firebase: [32m[1m+ [22m[39m View this release in the Firebase console: https://console.firebase.google.com/project/app-gift-flow/appdistribution/app/android:com.asc.gift_flow/releases/7lps7cv7da8a8?utm_source=firebase-tools
+  firebase: [32m[1m+ [22m[39m Share this release with testers who have access: https://appdistribution.firebase.google.com/testerapps/1:589252278901:android:3a5972ad164c02617bd63c/releases/7lps7cv7da8a8?utm_source=firebase-tools
+  firebase: [32m[1m+ [22m[39m Download the release binary (link expires in 1 hour): https://firebaseappdistribution.googleapis.com/app-binary-downloads/projects/589252278901/apps/1:589252278901:android:3a5972ad164c02617bd63c/releases/7lps7cv7da8a8/binaries/560457b6e562aa822edc62255885088d3d99d97482e7ed31a139a3b0cca093ce/app.apk?utm_source=firebase-tools&token=AMIZtSMAAAAAawjou6zdOZcfQPHqjpKX6oAwzVs3K-20O9a1P0gzZkCiSKcSKNTeymo9hGuCIFRabRvIpW4pPYSqWz9RJmaFUgkuHueH48v3lLgR5-gbwmm4S4VyAVPBOO-nbHggC-q1ZFiM_Q_Y6T4MWFWxG4THo32tkVRmanDrdJvRr3y6EmtxfN4KMtnfRggG1AQEZYmMDdrqqbmvIc13YcZa3ZldpoQs055knOVuiSY6-lsHAhoC47yoUEsNFcxiQskHCiheocVOoQQ5aFcfB0iF9D0a8q2aBRsgSGcbtAyOnk9yKUaOWrFlYDmwZJPgXmtTd4l9jezI-F4L8jr4-XQwuvsrFZSN51c
+  firebase: [36m[1mi [22m[39m updating release notes...
+  firebase: [32m[1m+ [22m[39m added release notes successfully
+  firebase: [36m[1mi [22m[39m distributing to testers/groups...
+  firebase: [32m[1m+ [22m[39m distributed to testers/groups successfully
+mobile v1.1.21 - build done
+[Dev_Release] by ducnv@bachasoft.com
+APK size: 57.96 MB
+
+Branch: main (1668834)
+Files changed: 1
+Lines changed: 3
+  +3
+  -0
+File types: .py(1)
+Top changes:
+  - mobile/tool/build/build_helper.py
+Telegram skipped (no token/chat id configured).
+E-mail skipped (not configured).
+FINISHED
