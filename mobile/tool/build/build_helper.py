@@ -215,6 +215,9 @@ def flutter_build_apk(build):
     # Token debug của Firebase App Check cho bản nội bộ (không bao giờ lưu trong repo).
     if os.environ.get("APPCHECK_DEBUG_TOKEN") and build.flavor.lower() != "product":
         cmd.append("--dart-define=APPCHECK_DEBUG_TOKEN=" + os.environ["APPCHECK_DEBUG_TOKEN"])
+    # Web client ID (Firebase > Authentication > Google). Không phải bí mật.
+    gid = os.environ.get("GOOGLE_SERVER_CLIENT_ID", "589252278901-39mqs38nko59hgab3qmj4vlsoaut8p8u.apps.googleusercontent.com")
+    cmd.append("--dart-define=GOOGLE_SERVER_CLIENT_ID=" + gid)
     print("Building APK:", " ".join(cmd))
     r = subprocess.run(cmd, text=True, encoding="utf-8", errors="replace")
     if r.returncode != 0:
